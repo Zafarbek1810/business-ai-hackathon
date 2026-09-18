@@ -1,0 +1,410 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  ANALYST
+  BUSINESS_CONSULTANT
+  ENTERPRISE
+}
+
+enum Plan {
+  FREE
+  PRO
+  BUSINESS
+}
+
+enum BusinessCategory {
+  GROCERY
+  CLOTHING
+  RESTAURANT
+  COFFEE_SHOP
+  PHARMACY
+  ELECTRONICS
+  BEAUTY
+  EDUCATION
+  AGRICULTURE
+  CONSTRUCTION
+  SERVICES
+  ECOMMERCE
+  OTHER
+}
+
+enum ExpenseKind {
+  FIXED
+  VARIABLE
+}
+
+enum ExpenseCategory {
+  RENT
+  SALARY
+  UTILITIES
+  MARKETING
+  LOGISTICS
+  TAXES
+  SOFTWARE
+  PRODUCT_COST
+  DELIVERY
+  PACKAGING
+  TRANSACTION_FEES
+  OTHER
+}
+
+enum ScenarioType {
+  PESSIMISTIC
+  BASE
+  OPTIMISTIC
+}
+
+enum DemandTrend {
+  UP
+  STABLE
+  DOWN
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DataProvenance {
+  DEMO
+  USER
+  CALCULATED
+  AI
+  EXTERNAL
+}
+
+enum NotificationType {
+  SYSTEM
+  ANALYSIS
+  REPORT
+}
+
+enum AIAnalysisType {
+  BUSINESS_SUMMARY
+  MARKET_INSIGHTS
+  FINANCIAL_INSIGHTS
+  RISK_ANALYSIS
+  VALIDATION
+  COPILOT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(USER)
+  plan         Plan     @default(FREE)
+  locale       String   @default("uz")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  businesses    Business[]
+  notifications Notification[]
+  reports       BusinessReport[]
+  auditLogs     AuditLog[]
+  competitors   Competitor[]     @relation("UserCompetitors")
+
+  @@index([role])
+}
+
+model Business {
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  category         BusinessCategory
+  country          String           @default("O'zbekiston")
+  region           String
+  city             String
+  availableCapital Decimal          @db.Decimal(18, 2)
+  startDate        DateTime
+  description      String?
+  isDemo           Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  products  BusinessProduct[]
+  expenses  BusinessExpense[]
+  scenarios FinancialScenario[]
+  risks     RiskAnalysis[]
+  analyses  AIAnalysis[]
+  reports   BusinessReport[]
+  snapshots FinancialSnapshot[]
+
+  @@index([userId])
+  @@index([category])
+  @@index([region])
+}
+
+model BusinessProduct {
+  id                   String   @id @default(cuid())
+  businessId           String
+  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name                 String
+  purchasePrice        Decimal  @db.Decimal(18, 2)
+  sellingPrice         Decimal  @db.Decimal(18, 2)
+  expectedMonthlySales Int
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model BusinessExpense {
+  id         String          @id @default(cuid())
+  businessId String
+  business   Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  kind       ExpenseKind
+  category   ExpenseCategory
+  label      String
+  amount     Decimal         @db.Decimal(18, 2)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([businessId])
+}
+
+model MarketCategory {
+  id          String           @id @default(cuid())
+  code        BusinessCategory @unique
+  nameUz      String
+  nameRu      String
+  nameEn      String
+  description String?
+  provenance  DataProvenance   @default(DEMO)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  products MarketProduct[]
+}
+
+model MarketProduct {
+  id           String         @id @default(cuid())
+  categoryId   String
+  category     MarketCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  nameUz       String
+  nameRu       String
+  nameEn       String
+  region       String
+  avgPrice     Decimal        @db.Decimal(18, 2)
+  minPrice     Decimal        @db.Decimal(18, 2)
+  maxPrice     Decimal        @db.Decimal(18, 2)
+  trendPercent Decimal        @db.Decimal(8, 2)
+  provenance   DataProvenance @default(DEMO)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  prices      MarketPrice[]
+  competitors Competitor[]
+  demand      DemandSignal[]
+
+  @@index([categoryId])
+  @@index([region])
+}
+
+model MarketPrice {
+  id         String         @id @default(cuid())
+  productId  String
+  product    MarketProduct  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  region     String
+  price      Decimal        @db.Decimal(18, 2)
+  observedAt DateTime
+  provenance DataProvenance @default(DEMO)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([productId])
+  @@index([region])
+}
+
+model Competitor {
+  id                String            @id @default(cuid())
+  productId         String?
+  product           MarketProduct?    @relation(fields: [productId], references: [id], onDelete: SetNull)
+  createdById       String?
+  createdBy         User?             @relation("UserCompetitors", fields: [createdById], references: [id], onDelete: SetNull)
+  name              String
+  category          BusinessCategory
+  location          String
+  region            String
+  city              String
+  latitude          Float?
+  longitude         Float?
+  minPrice          Decimal           @db.Decimal(18, 2)
+  maxPrice          Decimal           @db.Decimal(18, 2)
+  rating            Decimal           @db.Decimal(3, 1)
+  productCategories String[]
+  positioning       String
+  dataSource        String
+  provenance        DataProvenance    @default(DEMO)
+  lastUpdated       DateTime
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([region])
+  @@index([category])
+}
+
+model DemandSignal {
+  id              String            @id @default(cuid())
+  productId       String?
+  product         MarketProduct?    @relation(fields: [productId], references: [id], onDelete: SetNull)
+  category        BusinessCategory
+  region          String
+  score           Int
+  trend           DemandTrend
+  seasonalFactor  Decimal           @db.Decimal(6, 2)
+  historicalSales Int
+  explanationUz   String
+  explanationRu   String
+  explanationEn   String
+  provenance      DataProvenance    @default(DEMO)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([category, region])
+}
+
+model FinancialScenario {
+  id              String       @id @default(cuid())
+  businessId      String
+  business        Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type            ScenarioType
+  monthlyUnits    Int
+  sellingPrice    Decimal      @db.Decimal(18, 2)
+  variableCost    Decimal      @db.Decimal(18, 2)
+  fixedCosts      Decimal      @db.Decimal(18, 2)
+  revenue         Decimal      @db.Decimal(18, 2)
+  costs           Decimal      @db.Decimal(18, 2)
+  profit          Decimal      @db.Decimal(18, 2)
+  breakEvenUnits  Decimal      @db.Decimal(18, 4)
+  cashRequirement Decimal      @db.Decimal(18, 2)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([businessId, type])
+  @@index([businessId])
+}
+
+model FinancialSnapshot {
+  id                String   @id @default(cuid())
+  businessId        String
+  business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  revenue           Decimal  @db.Decimal(18, 2)
+  cogs              Decimal  @db.Decimal(18, 2)
+  grossProfit       Decimal  @db.Decimal(18, 2)
+  operatingExpenses Decimal  @db.Decimal(18, 2)
+  netProfit         Decimal  @db.Decimal(18, 2)
+  grossMargin       Decimal? @db.Decimal(10, 6)
+  operatingMargin   Decimal? @db.Decimal(10, 6)
+  breakEvenUnits    Decimal? @db.Decimal(18, 4)
+  breakEvenRevenue  Decimal? @db.Decimal(18, 2)
+  roiEstimate       Decimal? @db.Decimal(12, 6)
+  payload           Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model RiskAnalysis {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  overallScore Int
+  overallLevel RiskLevel
+  items        Json
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([businessId])
+}
+
+model AIAnalysis {
+  id           String         @id @default(cuid())
+  businessId   String
+  business     Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type         AIAnalysisType
+  input        Json
+  output       Json
+  provider     String
+  usedFallback Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([businessId])
+  @@index([type])
+}
+
+model BusinessReport {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  sections   Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([userId, read])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([name])
+  @@index([userId])
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

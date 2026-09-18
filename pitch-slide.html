@@ -1,0 +1,245 @@
+<!doctype html>
+<title>Biznes Radar</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+  :root{
+    --paper: #FAF6EC;
+    --paper-edge: #F1EAD8;
+    --ink: #16213A;
+    --ink-soft: #4A5470;
+    --gold: #B8912E;
+    --gold-deep: #8A6A1C;
+    --line: #E1D6B8;
+    --tag-bg: #16213A;
+    --tag-ink: #FAF6EC;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background: var(--paper-edge);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    padding: clamp(14px, 3vw, 40px) 16px;
+    display:flex;
+    justify-content:center;
+  }
+
+  .slide{
+    width: 100%;
+    max-width: 1240px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    box-shadow: 0 1px 0 var(--line), 0 18px 40px -28px rgba(22,33,58,0.35);
+    aspect-ratio: 16 / 9;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(20px, 3vw, 44px) clamp(22px, 4vw, 56px);
+    position: relative;
+    overflow: hidden;
+  }
+  @media (max-width: 760px){
+    .slide{ aspect-ratio: auto; }
+  }
+
+  .slide::before{
+    content:"";
+    position:absolute;
+    inset: 14px;
+    border: 1px solid var(--line);
+    pointer-events:none;
+  }
+
+  header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .brand .mark{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    color: var(--gold-deep);
+    border: 1px solid var(--gold);
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .brand .name{
+    font-family:'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(17px, 1.9vw, 21px);
+    letter-spacing: 0.01em;
+  }
+
+  .eyebrow-right{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-align:right;
+    line-height:1.5;
+  }
+
+  .thesis{
+    margin-top: clamp(10px, 2.4vw, 22px);
+    font-family:'Fraunces', Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(21px, 2.85vw, 33px);
+    line-height: 1.22;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+    max-width: 30ch;
+    color: var(--ink);
+  }
+  .thesis em{
+    font-style: normal;
+    color: var(--gold-deep);
+    border-bottom: 2px solid var(--gold);
+  }
+
+  main{
+    margin-top: clamp(14px, 2.6vw, 26px);
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0 clamp(20px, 3vw, 40px);
+    flex: 1;
+  }
+  @media (max-width: 760px){
+    main{ grid-template-columns: 1fr; }
+  }
+
+  .row{
+    display:grid;
+    grid-template-columns: minmax(118px, 30%) 1fr;
+    gap: 4px 14px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+    align-items: start;
+  }
+  main > .row:nth-child(1),
+  main > .row:nth-child(2){ border-top: none; }
+
+  .row .label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    padding-top: 2px;
+  }
+  .row .value{
+    font-size: 13.4px;
+    line-height: 1.48;
+    color: var(--ink);
+  }
+  .row .value b{
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  footer{
+    margin-top: clamp(10px, 2vw, 18px);
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .stage{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+  }
+  .stage .dots{
+    display:flex;
+    gap:4px;
+  }
+  .stage .dot{
+    width:7px; height:7px; border-radius:999px;
+    background: var(--line);
+    border: 1px solid var(--gold);
+  }
+  .stage .dot.on{ background: var(--gold); }
+
+  .ask{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    color: var(--tag-ink);
+    background: var(--tag-bg);
+    padding: 5px 10px;
+    border-radius: 3px;
+  }
+</style>
+
+<div class="slide">
+  <header>
+    <div class="brand">
+      <span class="mark">Business Challenge</span>
+      <span class="name">Biznes Radar AI</span>
+    </div>
+    <div class="eyebrow-right">AI Hackathon · Xorazm<br>Moliyaviy maslahatchi platforma</div>
+  </header>
+
+  <p class="thesis">
+    Yangi tadbirkorlarga bank yoki investorga borishdan oldin <em>ishonchli, O‘zbekistonga moslashtirilgan</em> moliyaviy reja va kredit/soliq hisob-kitobini bir necha daqiqada olishga yordam beramiz.
+  </p>
+
+  <main>
+    <div class="row">
+      <span class="label">Customer</span>
+      <span class="value">22–45 yosh, birinchi marta biznes ochayotgan yoki 1–2 yillik tajribali <b>YATT/MCHJ</b> tadbirkorlari — kredit yoki investitsiya oldidan turgan bosqichda.</span>
+    </div>
+    <div class="row">
+      <span class="label">Problem</span>
+      <span class="value">Moliyaviy savodxonlik past: noto‘g‘ri soliq rejimi, asossiz narx belgilash, bankka tayyor bo‘lmagan reja bilan borish — <b>har yangi biznesda takrorlanadi</b>.</span>
+    </div>
+    <div class="row">
+      <span class="label">Hozirgi alternativa</span>
+      <span class="value">Qimmat buxgalter (200–500 ming so‘m/marta), tartibsiz Excel, yoki O‘zbekiston soliq tizimini bilmaydigan ChatGPT.</span>
+    </div>
+    <div class="row">
+      <span class="label">Bizning yechim</span>
+      <span class="value">AI + deterministik moliyaviy dvigatel: 8 qadamli wizard → <b>tayyor biznes-reja hujjati</b> (model, xavf, ko‘nikma tavsiyasi).</span>
+    </div>
+    <div class="row">
+      <span class="label">Kim to‘laydi?</span>
+      <span class="value">Tadbirkorning o‘zi — FREE → PRO, oyiga <b>~30–50 ming so‘m</b> (buxgalterdan 5–10x arzon).</span>
+    </div>
+    <div class="row">
+      <span class="label">Birinchi 10 mijoz</span>
+      <span class="value">Xorazm biznes-inkubatorlari, mikrokredit bank filiallari, Telegram tadbirkorlik guruhlari.</span>
+    </div>
+  </main>
+
+  <footer>
+    <div class="stage">
+      Validation ladder:
+      <div class="dots">
+        <span class="dot on"></span><span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+      Ro‘yxatdan o‘tish bosqichida — keyingi qadam: 10–15 mijoz intervyusi
+    </div>
+    <span class="ask">Ravshanbek aka · savol-javob uchun tayyor</span>
+  </footer>
+</div>
