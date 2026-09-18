@@ -244,12 +244,17 @@ export default function NewBusinessPage() {
         {step === 5 && (
           <div className="grid gap-3">
             <div>
-              <Label>{experience === "BEGINNER" ? "Mahsulot turi" : "Mahsulot"}</Label>
+              <Label>Eng ko'p sotiladigan bitta mahsulotingiz</Label>
               <Input
-                placeholder="Masalan: erkaklar krossovkasi"
+                placeholder="Masalan: guruch 1 kg, non, erkaklar krossovkasi"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
               />
+              <p className="mt-1 text-xs text-slate-500">
+                "{CATEGORY_LABELS[category]}" — bu katta toifa, uning ichida narxi turlicha yuzlab
+                mahsulot bo'lishi mumkin. Moliyaviy hisob-kitob uchun aniq <b>bitta</b> mahsulot
+                nomini yozing (masalan "oziq-ovqat" emas, "guruch 1 kg" yoki "non").
+              </p>
             </div>
 
             {experience === "BEGINNER" && !showManualNumbers ? (
