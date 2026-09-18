@@ -1,12 +1,13 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Plan } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import {
   CurrentUser,
   AuthUser,
 } from '../common/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
-import { IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 class UpdateProfileDto {
   @IsOptional()
@@ -16,6 +17,11 @@ class UpdateProfileDto {
   @IsOptional()
   @IsString()
   locale?: string;
+}
+
+class UpdatePlanDto {
+  @IsEnum(Plan)
+  plan!: Plan;
 }
 
 @ApiTags('users')
@@ -46,6 +52,22 @@ export class UsersController {
     return this.prisma.user.update({
       where: { id: user.id },
       data: dto,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        plan: true,
+        locale: true,
+      },
+    });
+  }
+
+  @Patch('me/plan')
+  updatePlan(@CurrentUser() user: AuthUser, @Body() dto: UpdatePlanDto) {
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: { plan: dto.plan },
       select: {
         id: true,
         email: true,

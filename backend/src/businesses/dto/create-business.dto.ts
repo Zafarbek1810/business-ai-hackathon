@@ -91,6 +91,18 @@ export class UpdateBusinessDto {
   name?: string;
 
   @IsOptional()
+  @IsEnum(BusinessCategory)
+  category?: BusinessCategory;
+
+  @IsOptional()
+  @IsString()
+  region?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
   @IsString()
   description?: string;
 
@@ -100,7 +112,12 @@ export class UpdateBusinessDto {
   availableCapital?: number;
 
   @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
   @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => BusinessProductInputDto)
   products?: BusinessProductInputDto[];

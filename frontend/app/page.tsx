@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PricingSection } from "@/components/pricing/pricing-section";
 
 const STEPS = [
   "Ro'yxatdan o'ting",
@@ -22,6 +23,9 @@ export default function LandingPage() {
           <p className="text-lg font-semibold text-navy-900">BIZNES RADAR AI</p>
         </div>
         <div className="flex items-center gap-3">
+          <a href="#pricing" className="hidden text-sm text-slate-600 md:inline">
+            Tariflar
+          </a>
           <Link href="/login" className="text-sm text-slate-600">
             Kirish
           </Link>
@@ -123,24 +127,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="pricing" className="mx-auto max-w-6xl px-6 py-16">
-        <h2 className="text-2xl font-semibold text-navy-900">Tariflar</h2>
-        <p className="mt-2 text-sm text-slate-500">MVP: to'lov shlyuzi ulanmagan, arxitektura tayyor.</p>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {[
-            ["FREE", "1 biznes, asosiy kalkulyator, cheklangan biznes-reja"],
-            ["PRO", "Bir nechta biznes, ssenariy, AI tahlil, cheksiz biznes-reja hujjatlari"],
-            ["BUSINESS", "Jamoa, kengaytirilgan analitika, API, maxsus reja shabloni"],
-          ].map(([plan, body]) => (
-            <Card key={plan}>
-              <CardContent className="p-6">
-                <p className="text-sm font-semibold text-indigo-600">{plan}</p>
-                <p className="mt-3 text-sm text-slate-600">{body}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+      <PricingSection />
 
       <section className="border-t border-slate-100 py-16">
         <div className="mx-auto max-w-6xl px-6 text-center">

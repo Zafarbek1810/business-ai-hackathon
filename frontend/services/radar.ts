@@ -28,6 +28,8 @@ export const businessApi = {
   radar: (id: string) => api<RadarResponse>(`/businesses/${id}/radar`),
   create: (payload: unknown) =>
     api<Business>("/businesses", { method: "POST", body: JSON.stringify(payload) }),
+  update: (id: string, payload: unknown) =>
+    api<Business>(`/businesses/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   remove: (id: string) => api<{ success: boolean }>(`/businesses/${id}`, { method: "DELETE" }),
 };
 
@@ -158,6 +160,14 @@ export const reportApi = {
   get: (id: string) => api<BusinessReport>(`/reports/${id}`),
   create: (businessId: string) =>
     api<BusinessReport>("/reports", { method: "POST", body: JSON.stringify({ businessId }) }),
+};
+
+export const usersApi = {
+  updatePlan: (plan: "FREE" | "PRO" | "BUSINESS") =>
+    api<{ id: string; email: string; name: string; role: string; plan: string; locale: string }>(
+      "/users/me/plan",
+      { method: "PATCH", body: JSON.stringify({ plan }) },
+    ),
 };
 
 export const adminApi = {

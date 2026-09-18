@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRadar } from "@/hooks/use-radar";
 import { MetricCard } from "@/components/business/metric-card";
-import { DataSourceNote } from "@/components/business/data-source-note";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/states";
@@ -55,8 +54,6 @@ export default function DashboardPage() {
           <Button variant="secondary">Yangi g‘oya</Button>
         </Link>
       </div>
-
-      <DataSourceNote source={String(market.provenance)} />
 
       <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         <MetricCard

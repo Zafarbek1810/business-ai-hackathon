@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SimpleBarChart } from "@/components/charts/simple-charts";
 import { formatUzs } from "@/lib/format";
-import { DataSourceNote } from "@/components/business/data-source-note";
 import { AiInsightPanel } from "@/components/ai/ai-insight-panel";
 
 export default function ScenariosPage() {
@@ -31,7 +30,6 @@ export default function ScenariosPage() {
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-semibold">Ssenariy planner</h1>
-      <DataSourceNote source="CALCULATED" />
       <p className="text-sm text-slate-500">Bu ssenariylar, kafolatlangan prognoz emas.</p>
       <div className="grid gap-4 md:grid-cols-3">
         {(["PESSIMISTIC", "BASE", "OPTIMISTIC"] as const).map((type) => {

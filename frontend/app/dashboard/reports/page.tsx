@@ -9,7 +9,6 @@ import { reportApi } from "@/services/radar";
 import { useRadar } from "@/hooks/use-radar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DemoBadge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/format";
 import { ArrowRight, FileText } from "lucide-react";
 
@@ -60,10 +59,7 @@ export default function ReportsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-navy-900">{item.title}</p>
-                    {item.business?.isDemo ? <DemoBadge /> : null}
-                  </div>
+                  <p className="font-medium text-navy-900">{item.title}</p>
                   <p className="text-xs text-slate-500">{formatDate(item.createdAt)}</p>
                   <p className="inline-flex items-center gap-1 text-sm text-indigo-600">
                     Ko'rish <ArrowRight className="h-3.5 w-3.5" />

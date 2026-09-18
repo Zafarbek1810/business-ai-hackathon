@@ -53,6 +53,7 @@ export default function AdminPage() {
                 <th className="py-2">Ism</th>
                 <th>Email</th>
                 <th>Rol</th>
+                <th>Tarif</th>
                 <th>Bizneslar</th>
               </tr>
             </thead>
@@ -62,6 +63,7 @@ export default function AdminPage() {
                   <td className="py-2">{item.name}</td>
                   <td>{item.email}</td>
                   <td>{item.role}</td>
+                  <td>{item.plan}</td>
                   <td>{item._count.businesses}</td>
                 </tr>
               ))}

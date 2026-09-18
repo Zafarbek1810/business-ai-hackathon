@@ -2,7 +2,6 @@
 
 import { useRadar } from "@/hooks/use-radar";
 import { MetricCard } from "@/components/business/metric-card";
-import { DataSourceNote } from "@/components/business/data-source-note";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { RiskItem } from "@/types/api";
@@ -17,7 +16,6 @@ export default function RisksPage() {
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-semibold">Xavf tahlili</h1>
-      <DataSourceNote source="CALCULATED" />
       <MetricCard
         label="Umumiy xavf"
         value={risks ? `${risks.overallLevel} · ${risks.overallScore}/100` : "—"}

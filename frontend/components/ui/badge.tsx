@@ -25,7 +25,3 @@ export function Badge({
     />
   );
 }
-
-export function DemoBadge() {
-  return <Badge tone="amber">DEMO DATA — prototip</Badge>;
-}

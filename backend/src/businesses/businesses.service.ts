@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -21,6 +22,7 @@ import {
 import { analyzeRisks } from '../risks/engine/risk.engine';
 import { toNumber } from '../common/utils/decimal';
 import { MarketEstimateService } from '../market-estimate/market-estimate.service';
+import { PLAN_BUSINESS_LIMITS, planLimitMessage } from '../common/plans';
 
 const businessInclude = {
   products: true,
@@ -40,7 +42,7 @@ export class BusinessesService {
   ) {}
 
   async create(user: AuthUser, dto: CreateBusinessDto) {
-    this.assertPlanLimit(user, await this.countForUser(user.id));
+    await this.assertPlanLimit(user, await this.countForUser(user.id));
     const business = await this.prisma.business.create({
       data: {
         userId: user.id,
@@ -94,9 +96,17 @@ export class BusinessesService {
     await this.prisma.business.update({
       where: { id },
       data: {
-        name: dto.name,
-        description: dto.description,
-        availableCapital: dto.availableCapital,
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.category !== undefined ? { category: dto.category } : {}),
+        ...(dto.region !== undefined ? { region: dto.region } : {}),
+        ...(dto.city !== undefined ? { city: dto.city } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.availableCapital !== undefined
+          ? { availableCapital: dto.availableCapital }
+          : {}),
+        ...(dto.startDate !== undefined
+          ? { startDate: new Date(dto.startDate) }
+          : {}),
         ...(dto.products
           ? {
               products: {
@@ -322,8 +332,16 @@ export class BusinessesService {
     return this.prisma.business.count({ where: { userId } });
   }
 
-  private assertPlanLimit(user: AuthUser, count: number) {
-    void user;
-    void count;
+  private async assertPlanLimit(user: AuthUser, count: number) {
+    if (user.role === 'ADMIN') return;
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { plan: true },
+    });
+    const plan = dbUser?.plan ?? 'FREE';
+    const limit = PLAN_BUSINESS_LIMITS[plan];
+    if (limit !== null && count >= limit) {
+      throw new ForbiddenException(planLimitMessage(plan, limit));
+    }
   }
 }

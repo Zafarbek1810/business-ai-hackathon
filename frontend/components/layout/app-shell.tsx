@@ -18,8 +18,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
-import { DemoBadge } from "@/components/ui/badge";
 import { useRadar } from "@/hooks/use-radar";
+import { Badge } from "@/components/ui/badge";
+import { PLAN_LABELS } from "@/config/plans";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -78,7 +79,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           ) : null}
         </nav>
         <div className="border-t border-slate-100 p-4">
-          <p className="text-sm font-medium text-navy-900">{user?.name}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-navy-900">{user?.name}</p>
+            {user?.plan ? (
+              <Link href="/dashboard/settings">
+                <Badge tone={user.plan === "FREE" ? "slate" : "indigo"}>{PLAN_LABELS[user.plan]}</Badge>
+              </Link>
+            ) : null}
+          </div>
           <p className="text-xs text-slate-500">{user?.email}</p>
           <button
             type="button"
@@ -105,7 +113,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {radar ? `${radar.business.city}, ${radar.business.region}` : "Biznes tanlang"}
               </p>
             </div>
-            {radar?.business.isDemo ? <DemoBadge /> : null}
           </div>
           <Link href="/" className="text-sm text-slate-500 hover:text-navy-900">
             Bosh sahifa

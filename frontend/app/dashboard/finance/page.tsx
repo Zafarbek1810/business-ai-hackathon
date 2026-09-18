@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRadar } from "@/hooks/use-radar";
 import { MetricCard } from "@/components/business/metric-card";
-import { DataSourceNote } from "@/components/business/data-source-note";
 import { SimpleBarChart } from "@/components/charts/simple-charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPercent, formatUzs } from "@/lib/format";
@@ -50,7 +49,6 @@ export default function FinancePage() {
 
       {tab === "breakeven" ? (
         <div className="space-y-5">
-          <DataSourceNote source="CALCULATED" />
           <div className="grid gap-4 md:grid-cols-4">
             <MetricCard label="Tushum" value={formatUzs(finance.revenue)} />
             <MetricCard label="COGS" value={formatUzs(finance.cogs)} />
@@ -93,7 +91,6 @@ export default function FinancePage() {
 
       {tab === "market" ? (
         <div className="space-y-5">
-          <DataSourceNote source={String(radar.market.provenance)} />
           <div className="grid gap-4 md:grid-cols-4">
             <MetricCard label="Kategoriya" value={radar.business.category} />
             <MetricCard label="O'rtacha narx" value={formatUzs(radar.market.averagePrice ?? 0)} />

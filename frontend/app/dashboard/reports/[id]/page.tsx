@@ -5,10 +5,9 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { reportApi } from "@/services/radar";
 import { Button } from "@/components/ui/button";
-import { Badge, DemoBadge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/business/metric-card";
-import { DataSourceNote } from "@/components/business/data-source-note";
 import { SimpleBarChart } from "@/components/charts/simple-charts";
 import { Skeleton } from "@/components/ui/states";
 import { formatDate, formatPercent, formatUzs } from "@/lib/format";
@@ -104,10 +103,7 @@ export default function ReportDetailPage() {
 
       <div className="print-report space-y-6 rounded-2xl border border-slate-200 bg-white p-8">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold text-navy-900">{sections.overview.name}</h1>
-            {sections.overview.isDemo ? <DemoBadge /> : null}
-          </div>
+          <h1 className="text-2xl font-semibold text-navy-900">{sections.overview.name}</h1>
           <p className="mt-1 text-sm text-slate-500">
             {sections.overview.location} · {formatDate(report.createdAt)}
           </p>
@@ -124,7 +120,6 @@ export default function ReportDetailPage() {
 
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-navy-900">2. Bozor konteksti</h2>
-          <DataSourceNote source={sections.market.provenance} />
           <div className="grid gap-4 sm:grid-cols-3">
             <MetricCard label="O'rtacha narx" value={formatUzs(sections.market.averagePrice ?? 0)} />
             <MetricCard label="Raqobatchilar" value={`${sections.market.competitorCount} ta`} />

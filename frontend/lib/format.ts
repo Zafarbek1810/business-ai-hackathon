@@ -1,9 +1,18 @@
+function formatGrouped(value: number, digits = 0): string {
+  const negative = value < 0;
+  const abs = Math.abs(value);
+  const [integer, fraction] = (digits > 0 ? abs.toFixed(digits) : String(Math.round(abs))).split(".");
+  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const body = fraction ? `${grouped},${fraction}` : grouped;
+  return negative ? `-${body}` : body;
+}
+
 export function formatUzs(value: number | string | null | undefined): string {
   const amount = Number(value ?? 0);
   if (!Number.isFinite(amount)) {
     return "—";
   }
-  return `${Math.round(amount).toLocaleString("uz-UZ")} so‘m`;
+  return `${formatGrouped(amount)} so‘m`;
 }
 
 export function formatNumber(value: number | string | null | undefined, digits = 0): string {
@@ -11,10 +20,7 @@ export function formatNumber(value: number | string | null | undefined, digits =
   if (!Number.isFinite(amount)) {
     return "—";
   }
-  return amount.toLocaleString("uz-UZ", {
-    maximumFractionDigits: digits,
-    minimumFractionDigits: digits,
-  });
+  return formatGrouped(amount, digits);
 }
 
 export function formatPercent(value: number | null | undefined): string {
