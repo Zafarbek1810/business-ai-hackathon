@@ -22,7 +22,7 @@ export default function RegisterPage() {
     event.preventDefault();
     setLoading(true);
     try {
-      await register({ name, email, password });
+      await register({ name , email, password });
       router.push("/dashboard/ideas/new");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Ro‘yxatdan o‘tish amalga oshmadi");
