@@ -24,6 +24,7 @@ export const productEstimateSchema = z.object({
   purchasePrice: z.number().nonnegative(),
   sellingPrice: z.number().positive(),
   expectedMonthlySales: z.number().nonnegative(),
+  estimatedMonthlyFixedCost: z.number().nonnegative(),
   reasoningUz: z.string().min(1),
 });
 

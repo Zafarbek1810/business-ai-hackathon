@@ -68,6 +68,7 @@ export default function NewBusinessPage() {
       setPurchasePrice(Math.round(result.purchasePrice));
       setSellingPrice(Math.round(result.sellingPrice));
       setUnits(Math.round(result.expectedMonthlySales));
+      setRent(Math.round(result.estimatedMonthlyFixedCost));
       setEstimateReason(result.reasoningUz);
       setEstimateDone(true);
       toast.success("AI taxminiy raqamlarni to'ldirdi — tekshirib, kerak bo'lsa o'zgartiring.");
@@ -352,9 +353,33 @@ export default function NewBusinessPage() {
           </div>
         )}
         {step === 7 && (
-          <div>
-            <Label>Oylik doimiy xarajat</Label>
-            <Input type="number" value={rent} onChange={(e) => setRent(Number(e.target.value))} />
+          <div className="grid gap-3">
+            <div>
+              <Label>Oylik doimiy xarajat (ijara, kommunal, xodim va h.k.)</Label>
+              <Input type="number" value={rent} onChange={(e) => setRent(Number(e.target.value))} />
+            </div>
+            {estimateDone && rent > 0 ? (
+              <p className="text-xs text-slate-500">
+                Bu qiymat AI taxminidan avtomatik to'ldirildi — xohlasangiz o'zgartiring.
+              </p>
+            ) : (
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3">
+                <p className="text-sm text-indigo-900">
+                  Oylik xarajatingizni bilmaysizmi? AI kategoriya va hudud bo'yicha taxmin bera oladi.
+                </p>
+                <Button
+                  type="button"
+                  variant="accent"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => void estimateWithAi()}
+                  disabled={estimating}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {estimating ? "AI hisoblamoqda..." : "AI bilan hisoblab bering"}
+                </Button>
+              </div>
+            )}
           </div>
         )}
         {step === 8 && (
@@ -373,6 +398,11 @@ export default function NewBusinessPage() {
             </p>
           </div>
         )}
+        {step === 5 && (purchasePrice <= 0 || sellingPrice <= 0 || units <= 0) ? (
+          <p className="text-xs text-amber-700">
+            Davom etish uchun avval "AI bilan hisoblab bering" tugmasini bosing yoki raqamlarni qo'lda kiriting.
+          </p>
+        ) : null}
         <div className="flex justify-between pt-2">
           <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
             Orqaga
@@ -380,7 +410,10 @@ export default function NewBusinessPage() {
           {step < STEPS.length - 1 ? (
             <Button
               onClick={() => setStep((s) => s + 1)}
-              disabled={step === 0 && !experience}
+              disabled={
+                (step === 0 && !experience) ||
+                (step === 5 && (purchasePrice <= 0 || sellingPrice <= 0 || units <= 0))
+              }
             >
               Keyingi
             </Button>

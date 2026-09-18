@@ -75,6 +75,7 @@ export const aiApi = {
       purchasePrice: number;
       sellingPrice: number;
       expectedMonthlySales: number;
+      estimatedMonthlyFixedCost: number;
       reasoningUz: string;
       provider: string;
       usedFallback: boolean;

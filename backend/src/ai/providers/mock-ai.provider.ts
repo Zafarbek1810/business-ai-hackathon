@@ -12,21 +12,26 @@ import {
 
 const CATEGORY_ESTIMATE_DEFAULTS: Record<
   string,
-  { purchasePrice: number; sellingPrice: number; expectedMonthlySales: number }
+  {
+    purchasePrice: number;
+    sellingPrice: number;
+    expectedMonthlySales: number;
+    estimatedMonthlyFixedCost: number;
+  }
 > = {
-  GROCERY: { purchasePrice: 15000, sellingPrice: 20000, expectedMonthlySales: 300 },
-  CLOTHING: { purchasePrice: 100000, sellingPrice: 150000, expectedMonthlySales: 60 },
-  RESTAURANT: { purchasePrice: 15000, sellingPrice: 35000, expectedMonthlySales: 400 },
-  COFFEE_SHOP: { purchasePrice: 5000, sellingPrice: 15000, expectedMonthlySales: 500 },
-  PHARMACY: { purchasePrice: 8000, sellingPrice: 12000, expectedMonthlySales: 400 },
-  ELECTRONICS: { purchasePrice: 800000, sellingPrice: 1000000, expectedMonthlySales: 20 },
-  BEAUTY: { purchasePrice: 30000, sellingPrice: 60000, expectedMonthlySales: 100 },
-  EDUCATION: { purchasePrice: 0, sellingPrice: 300000, expectedMonthlySales: 30 },
-  AGRICULTURE: { purchasePrice: 3000, sellingPrice: 5000, expectedMonthlySales: 1000 },
-  CONSTRUCTION: { purchasePrice: 50000, sellingPrice: 70000, expectedMonthlySales: 100 },
-  SERVICES: { purchasePrice: 0, sellingPrice: 100000, expectedMonthlySales: 50 },
-  ECOMMERCE: { purchasePrice: 50000, sellingPrice: 80000, expectedMonthlySales: 80 },
-  OTHER: { purchasePrice: 30000, sellingPrice: 50000, expectedMonthlySales: 100 },
+  GROCERY: { purchasePrice: 15000, sellingPrice: 20000, expectedMonthlySales: 300, estimatedMonthlyFixedCost: 12_000_000 },
+  CLOTHING: { purchasePrice: 100000, sellingPrice: 150000, expectedMonthlySales: 60, estimatedMonthlyFixedCost: 15_000_000 },
+  RESTAURANT: { purchasePrice: 15000, sellingPrice: 35000, expectedMonthlySales: 400, estimatedMonthlyFixedCost: 25_000_000 },
+  COFFEE_SHOP: { purchasePrice: 5000, sellingPrice: 15000, expectedMonthlySales: 500, estimatedMonthlyFixedCost: 18_000_000 },
+  PHARMACY: { purchasePrice: 8000, sellingPrice: 12000, expectedMonthlySales: 400, estimatedMonthlyFixedCost: 14_000_000 },
+  ELECTRONICS: { purchasePrice: 800000, sellingPrice: 1000000, expectedMonthlySales: 20, estimatedMonthlyFixedCost: 20_000_000 },
+  BEAUTY: { purchasePrice: 30000, sellingPrice: 60000, expectedMonthlySales: 100, estimatedMonthlyFixedCost: 10_000_000 },
+  EDUCATION: { purchasePrice: 0, sellingPrice: 300000, expectedMonthlySales: 30, estimatedMonthlyFixedCost: 12_000_000 },
+  AGRICULTURE: { purchasePrice: 3000, sellingPrice: 5000, expectedMonthlySales: 1000, estimatedMonthlyFixedCost: 8_000_000 },
+  CONSTRUCTION: { purchasePrice: 50000, sellingPrice: 70000, expectedMonthlySales: 100, estimatedMonthlyFixedCost: 10_000_000 },
+  SERVICES: { purchasePrice: 0, sellingPrice: 100000, expectedMonthlySales: 50, estimatedMonthlyFixedCost: 8_000_000 },
+  ECOMMERCE: { purchasePrice: 50000, sellingPrice: 80000, expectedMonthlySales: 80, estimatedMonthlyFixedCost: 6_000_000 },
+  OTHER: { purchasePrice: 30000, sellingPrice: 50000, expectedMonthlySales: 100, estimatedMonthlyFixedCost: 10_000_000 },
 };
 
 export class MockAIProvider implements AIProvider {
