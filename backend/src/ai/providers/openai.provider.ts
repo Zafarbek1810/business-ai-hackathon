@@ -51,18 +51,44 @@ export class OpenAIProvider implements AIProvider {
     context: BusinessAIContext,
     question: string,
   ): Promise<CopilotReply> {
+    const competitors = context.market?.competitors ?? [];
+    const isCompetitorQuestion =
+      /raqobat|konkurent|competitor/i.test(question);
+
     const content = await this.complete([
       {
         role: 'system',
         content:
-          "Answer only from the supplied Business Radar JSON. If asked about competitors (raqobatchilar) — how many, who, their prices/locations — answer using context.market.competitors (each has name, price, location, source: 'USER' means the entrepreneur entered it, 'MAP' means it was found on OpenStreetMap near the business's city (real business name/location, price usually unknown), 'AI_WEB' means it was found via automated web search and may be less precise). Do not invent numbers or competitors not present in that array. Return JSON {answer, citations}. Reply in Uzbek Latin.",
+          "Answer only from the supplied Business Radar JSON. If asked about competitors (raqobatchilar) — how many, who, their prices/locations — you MUST answer using the COMPETITORS array given separately below (each item has name, price, location, source: 'USER' means the entrepreneur entered it, 'MAP' means it was found on OpenStreetMap near the business's city (real business name/location, price usually unknown), 'AI_WEB' means it was found via automated web search and may be less precise). Never answer a competitor question with just a count — you MUST name every competitor from the array, one per line, e.g. '1. <name> — <price/location if known>'. Do not invent competitors not present in that array; if the array is empty, say so explicitly instead of inventing names. Return JSON {answer, citations}. Reply in Uzbek Latin.",
       },
       {
         role: 'user',
-        content: JSON.stringify({ context, question }),
+        content: JSON.stringify({
+          COMPETITORS: competitors,
+          context,
+          question,
+        }),
       },
     ]);
-    return copilotReplySchema.parse(this.parseJson(content));
+    const reply = copilotReplySchema.parse(this.parseJson(content));
+
+    if (
+      isCompetitorQuestion &&
+      competitors.length > 0 &&
+      !competitors.some((c) => reply.answer.includes(c.name))
+    ) {
+      const list = competitors
+        .map((c, i) => {
+          const details = [c.price ? `${c.price} so'm` : null, c.location]
+            .filter(Boolean)
+            .join(', ');
+          return `${i + 1}. ${c.name}${details ? ` — ${details}` : ''}`;
+        })
+        .join('\n');
+      reply.answer = `${reply.answer}\n\nRaqobatchilar ro'yxati:\n${list}`;
+    }
+
+    return reply;
   }
 
   async estimateProductNumbers(input: ProductEstimateInput): Promise<unknown> {
