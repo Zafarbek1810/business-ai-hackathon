@@ -5,6 +5,7 @@ import type {
   AuthResponse,
   Business,
   BusinessReport,
+  Competitor,
   CopilotReply,
   FinanceResult,
   LoanResult,
@@ -51,6 +52,22 @@ export const financeApi = {
     api<Scenario>(`/businesses/${businessId}/scenarios`, {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+};
+
+export const competitorApi = {
+  list: (businessId: string) => api<Competitor[]>(`/businesses/${businessId}/competitors`),
+  add: (
+    businessId: string,
+    payload: { name: string; price: number; location?: string; rating?: number },
+  ) =>
+    api<Competitor>(`/businesses/${businessId}/competitors`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  remove: (businessId: string, competitorId: string) =>
+    api<{ success: boolean }>(`/businesses/${businessId}/competitors/${competitorId}`, {
+      method: "DELETE",
     }),
 };
 

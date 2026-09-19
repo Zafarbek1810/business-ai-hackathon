@@ -73,7 +73,7 @@ export class AdminController {
     return this.prisma.marketProduct.findMany({
       include: {
         category: true,
-        _count: { select: { prices: true, competitors: true } },
+        _count: { select: { prices: true } },
       },
     });
   }

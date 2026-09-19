@@ -9,6 +9,7 @@ import { formatPercent, formatUzs } from "@/lib/format";
 import { AiInsightPanel } from "@/components/ai/ai-insight-panel";
 import { CreditCalculator } from "@/components/finance/credit-calculator";
 import { TaxCalculator } from "@/components/finance/tax-calculator";
+import { CompetitorManager } from "@/components/finance/competitor-manager";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -91,19 +92,33 @@ export default function FinancePage() {
 
       {tab === "market" ? (
         <div className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3">
             <MetricCard label="Kategoriya" value={radar.business.category} />
-            <MetricCard label="O'rtacha narx" value={formatUzs(radar.market.averagePrice ?? 0)} />
+            <MetricCard
+              label="O'rtacha narx"
+              value={radar.market.averagePrice !== null ? formatUzs(radar.market.averagePrice) : "—"}
+            />
             <MetricCard
               label="Min / max narx"
-              value={`${formatUzs(radar.market.minPrice ?? 0)} / ${formatUzs(radar.market.maxPrice ?? 0)}`}
+              value={
+                radar.market.minPrice !== null && radar.market.maxPrice !== null
+                  ? `${formatUzs(radar.market.minPrice)} / ${formatUzs(radar.market.maxPrice)}`
+                  : "—"
+              }
             />
-            <MetricCard label="Narx trendi" value={`${radar.market.trendPercent ?? 0}%`} hint="Demo" />
-            <MetricCard label="Raqobatchilar" value={`${radar.market.competitorCount} ta`} />
             <MetricCard
-              label="Talab balli"
+              label="Raqobatchilar"
+              value={`${radar.market.competitorCount} ta`}
+              hint={
+                radar.market.competitorCount > 0
+                  ? `${radar.market.competitors.filter((c) => c.source === "USER").length} siz, ${radar.market.competitors.filter((c) => c.source === "AI_WEB").length} AI internet qidiruvi`
+                  : undefined
+              }
+            />
+            <MetricCard
+              label="Talab darajasi"
               value={radar.market.demandScore !== null ? `${radar.market.demandScore}/100` : "—"}
-              hint={radar.market.demandTrend ?? undefined}
+              hint={radar.market.demandTrend ?? (radar.market.demandScore !== null ? "AI veb-qidiruvi" : undefined)}
             />
           </div>
           <Card>
@@ -111,12 +126,25 @@ export default function FinancePage() {
               <CardTitle>Bozor xulosasi</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-slate-600">
-              {radar.business.category} kategoriyasi bo'yicha {radar.business.region} hududida
-              o'rtacha narx {formatUzs(radar.market.averagePrice ?? 0)}, {radar.market.competitorCount} ta
-              raqobatchi qayd etilgan. Bu raqamlar prototip/demo to'plam — real qarordan oldin
-              o'zingiz tekshiring.
+              {radar.market.summaryUz ? (
+                <p className="mb-2">{radar.market.summaryUz}</p>
+              ) : null}
+              {radar.market.competitorCount > 0 ? (
+                <>
+                  {radar.business.category} kategoriyasi bo'yicha {radar.business.region} hududida
+                  tizimda qayd etilgan {radar.market.competitorCount} ta raqobatchining o'rtacha
+                  narxi {formatUzs(radar.market.averagePrice ?? 0)}. Bu ma'lumotlar real
+                  raqobatchilarga (siz kiritgan va/yoki AI internet qidiruvi topgan) asoslangan.
+                </>
+              ) : (
+                <>
+                  Hali raqobatchi ma'lumoti topilmagan. Tizim avtomatik internetdan qidirmoqda,
+                  yoki pastdagi formadan real raqobatchilarni o'zingiz qo'shishingiz mumkin.
+                </>
+              )}
             </CardContent>
           </Card>
+          <CompetitorManager businessId={radar.business.id} />
           <AiInsightPanel businessId={radar.business.id} kind="market" />
         </div>
       ) : null}

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { BusinessesService } from './businesses.service';
 import { BusinessesController } from './businesses.controller';
-import { MarketEstimateModule } from '../market-estimate/market-estimate.module';
+import { MarketResearchModule } from '../market-research/market-research.module';
 
 @Module({
-  imports: [MarketEstimateModule],
+  imports: [MarketResearchModule],
   controllers: [BusinessesController],
   providers: [BusinessesService],
   exports: [BusinessesService],

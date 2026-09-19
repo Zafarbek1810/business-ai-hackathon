@@ -18,11 +18,34 @@ import {
   calculateFinance,
   calculateScenario,
   defaultScenarioAssumptions,
+  roundMoney,
 } from '../finance/engine/finance.engine';
 import { analyzeRisks } from '../risks/engine/risk.engine';
 import { toNumber } from '../common/utils/decimal';
-import { MarketEstimateService } from '../market-estimate/market-estimate.service';
 import { PLAN_BUSINESS_LIMITS, planLimitMessage } from '../common/plans';
+import { MarketResearchService } from '../market-research/market-research.service';
+
+export interface MarketContextResult {
+  provenance: 'USER' | 'NONE';
+  productId: null;
+  nameUz: null;
+  averagePrice: number | null;
+  minPrice: number | null;
+  maxPrice: number | null;
+  trendPercent: number | null;
+  competitorCount: number;
+  competitors: Array<{
+    name: string;
+    price: number;
+    location: string | null;
+    source: string;
+  }>;
+  demandScore: number | null;
+  demandTrend: string | null;
+  seasonalFactor: null;
+  summaryUz: string | null;
+  labeledDemo: false;
+}
 
 const businessInclude = {
   products: true,
@@ -38,7 +61,7 @@ export class BusinessesService {
     private readonly prisma: PrismaService,
     private readonly ownership: OwnershipService,
     private readonly analytics: AnalyticsService,
-    private readonly marketEstimate: MarketEstimateService,
+    private readonly marketResearch: MarketResearchService,
   ) {}
 
   async create(user: AuthUser, dto: CreateBusinessDto) {
@@ -147,8 +170,12 @@ export class BusinessesService {
     ) {
       await this.rebuildDerived(id);
     }
+    const researched = await this.marketResearch.researchIfNeeded(id);
+    if (researched) {
+      await this.rebuildDerived(id);
+    }
     const business = await this.findOne(user, id);
-    const market = await this.marketContext(business.category, business.region);
+    const market = await this.marketContext(business.id);
     const financeInput = this.toFinanceInput(business);
     const finance = calculateFinance(financeInput);
     const latestRisk = business.risks[0] ?? null;
@@ -177,7 +204,7 @@ export class BusinessesService {
 
     const input = this.toFinanceInput(business);
     const finance = calculateFinance(input);
-    const market = await this.marketContext(business.category, business.region);
+    const market = await this.marketContext(businessId);
     const primary = business.products[0];
     const risks = analyzeRisks({
       competitorCount: market.competitorCount,
@@ -324,8 +351,87 @@ export class BusinessesService {
     };
   }
 
-  async marketContext(category: string, region: string) {
-    return this.marketEstimate.estimateMarketContext(category, region);
+  async marketContext(businessId: string): Promise<MarketContextResult> {
+    const [competitors, research] = await Promise.all([
+      this.prisma.competitor.findMany({ where: { businessId } }),
+      this.prisma.marketResearch.findUnique({ where: { businessId } }),
+    ]);
+    const pricedCompetitors = competitors.filter(
+      (c) => toNumber(c.price) > 0,
+    );
+    const prices = pricedCompetitors.map((c) => toNumber(c.price));
+    const count = competitors.length;
+    return {
+      provenance: count > 0 ? 'USER' : 'NONE',
+      productId: null,
+      nameUz: null,
+      averagePrice:
+        prices.length > 0
+          ? roundMoney(prices.reduce((a, b) => a + b, 0) / prices.length)
+          : null,
+      minPrice: prices.length > 0 ? Math.min(...prices) : null,
+      maxPrice: prices.length > 0 ? Math.max(...prices) : null,
+      trendPercent: research?.trendPercent
+        ? toNumber(research.trendPercent)
+        : null,
+      competitorCount: count,
+      competitors: competitors.map((c) => ({
+        name: c.name,
+        price: toNumber(c.price),
+        location: c.location,
+        source: c.source,
+      })),
+      demandScore: research?.demandScore ?? null,
+      demandTrend: research?.demandTrend ?? null,
+      seasonalFactor: null,
+      summaryUz: research?.summaryUz ?? null,
+      labeledDemo: false,
+    };
+  }
+
+  async listCompetitors(user: AuthUser, businessId: string) {
+    await this.ownership.assertBusinessOwner(businessId, user);
+    return this.prisma.competitor.findMany({
+      where: { businessId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async addCompetitor(
+    user: AuthUser,
+    businessId: string,
+    dto: { name: string; price: number; location?: string; rating?: number },
+  ) {
+    await this.ownership.assertBusinessOwner(businessId, user);
+    const competitor = await this.prisma.competitor.create({
+      data: {
+        businessId,
+        name: dto.name,
+        price: dto.price,
+        location: dto.location,
+        rating: dto.rating,
+      },
+    });
+    await this.rebuildDerived(businessId);
+    await this.analytics.track('competitor_added', user.id, { businessId });
+    return competitor;
+  }
+
+  async removeCompetitor(
+    user: AuthUser,
+    businessId: string,
+    competitorId: string,
+  ) {
+    await this.ownership.assertBusinessOwner(businessId, user);
+    const competitor = await this.prisma.competitor.findUnique({
+      where: { id: competitorId },
+    });
+    if (!competitor || competitor.businessId !== businessId) {
+      throw new NotFoundException('Raqobatchi topilmadi.');
+    }
+    await this.prisma.competitor.delete({ where: { id: competitorId } });
+    await this.rebuildDerived(businessId);
+    return { success: true };
   }
 
   private async countForUser(userId: string) {

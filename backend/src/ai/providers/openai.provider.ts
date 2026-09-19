@@ -3,13 +3,15 @@ import {
   AIProvider,
   BusinessAIContext,
   CopilotReply,
-  MarketContextEstimateInput,
   ProductEstimateInput,
   aiInsightSchema,
   copilotReplySchema,
-  marketContextEstimateSchema,
   productEstimateSchema,
 } from '../ai.types';
+import {
+  MarketResearchInput,
+  marketResearchSchema,
+} from '../../market-research/market-research.types';
 
 interface ChatCompletionResponse {
   choices?: Array<{
@@ -53,7 +55,7 @@ export class OpenAIProvider implements AIProvider {
       {
         role: 'system',
         content:
-          'Answer only from the supplied Business Radar JSON. Do not invent numbers. Return JSON {answer, citations}. Reply in Uzbek Latin.',
+          "Answer only from the supplied Business Radar JSON. If asked about competitors (raqobatchilar) — how many, who, their prices/locations — answer using context.market.competitors (each has name, price, location, source: 'USER' means the entrepreneur entered it, 'MAP' means it was found on OpenStreetMap near the business's city (real business name/location, price usually unknown), 'AI_WEB' means it was found via automated web search and may be less precise). Do not invent numbers or competitors not present in that array. Return JSON {answer, citations}. Reply in Uzbek Latin.",
       },
       {
         role: 'user',
@@ -78,21 +80,19 @@ export class OpenAIProvider implements AIProvider {
     return productEstimateSchema.parse(this.parseJson(content));
   }
 
-  async estimateMarketContext(
-    input: MarketContextEstimateInput,
-  ): Promise<unknown> {
+  async researchMarket(input: MarketResearchInput): Promise<unknown> {
     const content = await this.complete([
       {
         role: 'system',
         content:
-          "Based on your general knowledge of the Uzbekistan small-retail market, provide a REASONABLE, CLEARLY-LABELED-AS-ESTIMATE snapshot of typical market conditions for the given business category and region: an average/min/max retail price range in UZS for a typical product in that category, a rough recent price trend percent (can be 0 if unknown), a typical number of visible local competitors for a small shop in that category/region, and a demand score (0-100) with trend. Never present these as verified real-time statistics. Return strict JSON with keys: averagePrice, minPrice, maxPrice (numbers, UZS, or null if truly unknown), trendPercent (number or null), competitorCount (integer), demandScore (0-100 or null), demandTrend ('UP'|'STABLE'|'DOWN' or null), reasoningUz (short Uzbek Latin explanation, must state this is an AI estimate, not verified data). Reply in Uzbek Latin for reasoningUz.",
+          'You research the local small-retail market for an entrepreneur in Uzbekistan using REAL web search results provided to you (title/snippet/url for each). Extract concrete competitor businesses mentioned in the search results (name, an estimated price in UZS if a price is mentioned or clearly implied, and location if mentioned) — do NOT invent competitors that are not grounded in the search results; if the search results contain no usable competitor names, return an empty competitors array. From the same search results, infer a rough demand score (0-100), demand trend (UP/STABLE/DOWN), and price trend percent only if the search results give some signal; otherwise return null for these. Return strict JSON with keys: competitors (array of {name, estimatedPrice (number or null), location (string or null)}, max 10), demandScore (0-100 or null), demandTrend (\'UP\'|\'STABLE\'|\'DOWN\' or null), trendPercent (number or null), summaryUz (a short Uzbek Latin summary of what was found and from where, explicitly noting this is based on web search, not verified real-time data). Reply in Uzbek Latin for summaryUz.',
       },
       {
         role: 'user',
         content: JSON.stringify(input),
       },
     ]);
-    return marketContextEstimateSchema.parse(this.parseJson(content));
+    return marketResearchSchema.parse(this.parseJson(content));
   }
 
   private parseJson(content: string): unknown {

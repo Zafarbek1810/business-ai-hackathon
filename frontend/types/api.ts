@@ -198,9 +198,16 @@ export interface RadarResponse {
     maxPrice: number | null;
     trendPercent: number | null;
     competitorCount: number;
+    competitors: Array<{
+      name: string;
+      price: number;
+      location: string | null;
+      source: "USER" | "AI_WEB" | "MAP";
+    }>;
     demandScore: number | null;
     demandTrend: string | null;
     seasonalFactor: number | null;
+    summaryUz: string | null;
     labeledDemo: boolean;
   };
   finance: FinanceResult;
@@ -228,6 +235,17 @@ export interface CopilotReply {
   citations: string[];
   provider: string;
   usedFallback: boolean;
+}
+
+export interface Competitor {
+  id: string;
+  businessId: string;
+  name: string;
+  price: number | string;
+  location: string | null;
+  rating: number | string | null;
+  source: "USER" | "AI_WEB" | "MAP";
+  createdAt: string;
 }
 
 export interface BusinessReport {
