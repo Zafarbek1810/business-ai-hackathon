@@ -10,6 +10,7 @@ import {
   IsNumber,
   IsOptional,
   IsPositive,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -68,6 +69,7 @@ class CalculateTaxDto implements TaxInput {
   @IsOptional() @IsEnum(['SIMPLIFIED', 'GENERAL']) mchjRegime?: MchjRegime;
   @IsOptional() @IsEnum(BusinessCategory) category?: BusinessCategory;
   @IsOptional() @IsBoolean() isVatPayer?: boolean;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) benefitPercent?: number;
 }
 
 @ApiTags('finance')

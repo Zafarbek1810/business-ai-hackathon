@@ -10,6 +10,7 @@ import { streamAiChat } from "@/services/radar";
 import { Button } from "@/components/ui/button";
 import { CATEGORY_LABELS } from "@/types/api";
 import { cn } from "@/lib/utils";
+import { renderAnswerWithLinks } from "@/components/ai/render-answer";
 
 type ChatRole = "user" | "assistant";
 type ChatMessage = { id: string; role: ChatRole; content: string };
@@ -262,7 +263,11 @@ export function InsightsChat() {
                           : "bg-white text-slate-800 shadow-sm",
                       )}
                     >
-                      {message.content || (isLastAssistant ? "" : "...")}
+                      {message.content
+                        ? renderAnswerWithLinks(message.content)
+                        : isLastAssistant
+                          ? ""
+                          : "..."}
                       {isLastAssistant ? (
                         <span className="ml-0.5 inline-block h-4 w-[2px] translate-y-[2px] animate-pulse bg-navy-900" />
                       ) : null}

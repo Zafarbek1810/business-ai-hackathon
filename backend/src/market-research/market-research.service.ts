@@ -6,6 +6,7 @@ import { OpenAIProvider } from '../ai/providers/openai.provider';
 import { AIProvider } from '../ai/ai.types';
 import { marketResearchSchema } from './market-research.types';
 import { webSearch } from './web-search.util';
+import { searchTwoGis } from './twogis.util';
 
 const CATEGORY_LABELS_UZ: Record<string, string> = {
   GROCERY: 'oziq-ovqat do’koni',
@@ -41,22 +42,30 @@ export class MarketResearchService {
         : new OpenAIProvider(
             apiKey,
             this.config.get<string>('AI_MODEL', 'google/gemma-4-E4B-it'),
-            this.config.get<string>('AI_BASE_URL', 'https://api.deepinfra.com/v1/openai'),
+            this.config.get<string>(
+              'AI_BASE_URL',
+              'https://api.deepinfra.com/v1/openai',
+            ),
           );
   }
 
   async researchIfNeeded(businessId: string): Promise<boolean> {
-    const existing = await this.prisma.marketResearch.findUnique({
-      where: { businessId },
-    });
-    if (existing) {
+    try {
+      await this.prisma.marketResearch.create({
+        data: { businessId, status: 'PENDING' },
+      });
+    } catch {
+      // Another concurrent call already claimed (or finished) this business's
+      // research — do not run a second web search / AI pass for it.
       return false;
     }
+
     const business = await this.prisma.business.findUnique({
       where: { id: businessId },
       include: { products: { take: 1 } },
     });
     if (!business) {
+      await this.prisma.marketResearch.delete({ where: { businessId } });
       return false;
     }
 
@@ -64,11 +73,16 @@ export class MarketResearchService {
       const label = CATEGORY_LABELS_UZ[business.category] ?? "do'kon";
       const productName = business.products[0]?.name ?? null;
       const searchApiKey = this.config.get<string>('SEARCH_API_KEY', '');
+      const twoGisApiKey = this.config.get<string>('TWOGIS_API_KEY', '');
 
       const query = productName
-        ? `"${productName}" narxi sotib olish ${business.city} ${business.region}`
+        ? `${productName} narxi sotib olish ${business.city} ${business.region}`
         : `${label} ${business.city} ${business.region} narxlari`;
-      const searchResults = await webSearch(query, searchApiKey);
+      const twoGisQuery = productName ?? label;
+      const [searchResults, twoGisResults] = await Promise.all([
+        webSearch(query, searchApiKey),
+        searchTwoGis(twoGisQuery, business.city, twoGisApiKey),
+      ]);
 
       let research;
       if (searchResults.length === 0) {
@@ -102,15 +116,35 @@ export class MarketResearchService {
           };
         }
       }
+      if (twoGisResults.length > 0) {
+        research = {
+          ...research,
+          summaryUz: `${research.summaryUz} 2GIS xaritasidan ${twoGisResults.length} ta qo'shimcha real biznes topildi (saytsiz/onlaynda ko'rinmaydigan do'konlar ham).`,
+        };
+      }
       const usedFallback = this.provider.name === 'mock';
 
-      await this.prisma.$transaction(async (tx) => {
-        for (const competitor of research.competitors.map((c) => ({
+      const mergedCompetitors = [
+        ...research.competitors.map((c) => ({
           name: c.name,
           location: c.location,
           price: c.estimatedPrice,
+          contact: c.contact,
+          sourceUrl: c.sourceUrl,
           src: 'AI_WEB' as const,
-        }))) {
+        })),
+        ...twoGisResults.map((r) => ({
+          name: r.name,
+          location: r.address,
+          price: null as number | null,
+          contact: r.phone,
+          sourceUrl: null as string | null,
+          src: 'MAP' as const,
+        })),
+      ];
+
+      await this.prisma.$transaction(async (tx) => {
+        for (const competitor of mergedCompetitors) {
           const already = await tx.competitor.findFirst({
             where: {
               businessId,
@@ -124,20 +158,24 @@ export class MarketResearchService {
               name: competitor.name,
               price: competitor.price ?? 0,
               location: competitor.location,
+              contact: competitor.contact,
+              sourceUrl: competitor.sourceUrl,
               source: competitor.src,
             },
           });
         }
-        await tx.marketResearch.create({
-          data: {
-            businessId,
-            status: usedFallback ? 'SKIPPED' : 'DONE',
-            demandScore: research.demandScore,
-            demandTrend: research.demandTrend ?? undefined,
-            trendPercent: research.trendPercent,
-            summaryUz: research.summaryUz,
-            sourceUrls: searchResults.map((r) => r.url),
-          },
+        const data = {
+          status: usedFallback ? ('SKIPPED' as const) : ('DONE' as const),
+          demandScore: research.demandScore,
+          demandTrend: research.demandTrend ?? undefined,
+          trendPercent: research.trendPercent,
+          summaryUz: research.summaryUz,
+          sourceUrls: searchResults.map((r) => r.url),
+        };
+        await tx.marketResearch.upsert({
+          where: { businessId },
+          create: { businessId, ...data },
+          update: data,
         });
       });
       return true;

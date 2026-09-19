@@ -25,6 +25,8 @@ export function TaxCalculator() {
   const [expenses, setExpenses] = useState(20000000);
   const [mchjRegime, setMchjRegime] = useState<MchjRegime>("SIMPLIFIED");
   const [isVatPayer, setIsVatPayer] = useState(false);
+  const [hasBenefit, setHasBenefit] = useState(false);
+  const [benefitPercent, setBenefitPercent] = useState(0);
   const [result, setResult] = useState<TaxResult | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -38,6 +40,7 @@ export function TaxCalculator() {
         mchjRegime: entityType === "MCHJ" ? mchjRegime : undefined,
         category: entityType === "YATT" ? category : undefined,
         isVatPayer: entityType === "MCHJ" && mchjRegime === "GENERAL" ? isVatPayer : undefined,
+        benefitPercent: hasBenefit ? benefitPercent : undefined,
       });
       setResult(res);
       if (!res.valid) {
@@ -165,6 +168,35 @@ export function TaxCalculator() {
           </div>
         )}
 
+        <div className="space-y-2 rounded-xl border border-slate-200 p-3">
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={hasBenefit}
+              onChange={(e) => setHasBenefit(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            Soliq yengilligim bor (masalan IT Park rezidentligi, boshlang‘ich davr yoki hududiy imtiyoz)
+          </label>
+          {hasBenefit ? (
+            <div>
+              <Label htmlFor="benefit-percent">Yengillik foizi (%)</Label>
+              <Input
+                id="benefit-percent"
+                type="number"
+                min={0}
+                max={100}
+                value={benefitPercent}
+                onChange={(e) => setBenefitPercent(Number(e.target.value))}
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Aniq foizni o‘zingiz kiritasiz — tizim huquqni avtomatik tekshirmaydi. Guvohnoma yoki
+                soliq.uz ma’lumotiga qarab kiriting.
+              </p>
+            </div>
+          ) : null}
+        </div>
+
         <Button onClick={() => void calculate()} disabled={loading}>
           {loading ? "Hisoblanmoqda..." : "Hisoblash"}
         </Button>
@@ -177,6 +209,13 @@ export function TaxCalculator() {
               <MetricCard label="Sof daromad" value={formatUzs(result.netIncome)} tone="green" />
               {result.vatEstimate !== null ? (
                 <MetricCard label="NDS (ma'lumot uchun)" value={formatUzs(result.vatEstimate)} tone="amber" />
+              ) : null}
+              {result.benefitAmount > 0 ? (
+                <MetricCard
+                  label={`Yengillik bilan tejaldi (${result.benefitPercent}%)`}
+                  value={formatUzs(result.benefitAmount)}
+                  tone="green"
+                />
               ) : null}
             </div>
             {result.disclaimers.length > 0 ? (

@@ -63,6 +63,8 @@ export interface BusinessAIContext {
       name: string;
       price: number;
       location: string | null;
+      contact: string | null;
+      sourceUrl: string | null;
       source: string;
     }>;
     demandScore: number | null;

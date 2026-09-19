@@ -11,10 +11,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { aiApi, businessApi, reportApi } from "@/services/radar";
 import { useAuth } from "@/features/auth/auth-context";
 import { CATEGORY_LABELS, REGIONS, type BusinessCategory } from "@/types/api";
-import { Sparkles } from "lucide-react";
+import { Plus, Sparkles, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ExperienceLevel = "BEGINNER" | "EXPERIENCED";
+
+type Product = {
+  name: string;
+  purchasePrice: number;
+  sellingPrice: number;
+  expectedMonthlySales: number;
+};
 
 const STEPS = [
   "Tajriba darajasi",
@@ -44,6 +51,7 @@ export default function NewBusinessPage() {
   );
   const [region, setRegion] = useState(REGIONS[0]);
   const [city, setCity] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
   const [productName, setProductName] = useState("");
   const [purchasePrice, setPurchasePrice] = useState(0);
   const [sellingPrice, setSellingPrice] = useState(0);
@@ -79,6 +87,29 @@ export default function NewBusinessPage() {
     }
   }
 
+  function addProduct() {
+    if (!productName.trim() || purchasePrice <= 0 || sellingPrice <= 0 || units <= 0) return;
+    setProducts((prev) => [
+      ...prev,
+      {
+        name: productName.trim(),
+        purchasePrice,
+        sellingPrice,
+        expectedMonthlySales: units,
+      },
+    ]);
+    setProductName("");
+    setPurchasePrice(0);
+    setSellingPrice(0);
+    setUnits(0);
+    setEstimateDone(false);
+    setEstimateReason(null);
+  }
+
+  function removeProduct(index: number) {
+    setProducts((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function submit() {
     setLoading(true);
     try {
@@ -89,14 +120,7 @@ export default function NewBusinessPage() {
         city,
         availableCapital: capital,
         startDate: new Date(startDate).toISOString(),
-        products: [
-          {
-            name: productName,
-            purchasePrice,
-            sellingPrice,
-            expectedMonthlySales: units,
-          },
-        ],
+        products,
         expenses: [
           {
             kind: "FIXED",
@@ -243,8 +267,37 @@ export default function NewBusinessPage() {
         )}
         {step === 5 && (
           <div className="grid gap-3">
+            {products.length > 0 ? (
+              <div className="space-y-2">
+                {products.map((product, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                  >
+                    <div className="text-sm">
+                      <p className="font-medium text-navy-900">{product.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {product.purchasePrice.toLocaleString("uz-UZ")} → {product.sellingPrice.toLocaleString("uz-UZ")} so‘m ·{" "}
+                        {product.expectedMonthlySales.toLocaleString("uz-UZ")} dona/oy
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="O'chirish"
+                      onClick={() => removeProduct(index)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
             <div>
-              <Label>Eng ko'p sotiladigan bitta mahsulotingiz</Label>
+              <Label>
+                {products.length > 0 ? "Yana bir mahsulot qo'shing (ixtiyoriy)" : "Eng ko'p sotiladigan bitta mahsulotingiz"}
+              </Label>
               <Input
                 placeholder="Masalan: guruch 1 kg, non, erkaklar krossovkasi"
                 value={productName}
@@ -252,8 +305,9 @@ export default function NewBusinessPage() {
               />
               <p className="mt-1 text-xs text-slate-500">
                 "{CATEGORY_LABELS[category]}" — bu katta toifa, uning ichida narxi turlicha yuzlab
-                mahsulot bo'lishi mumkin. Moliyaviy hisob-kitob uchun aniq <b>bitta</b> mahsulot
-                nomini yozing (masalan "oziq-ovqat" emas, "guruch 1 kg" yoki "non").
+                mahsulot bo'lishi mumkin. Har bir mahsulotni alohida, aniq nomi bilan qo'shing
+                (masalan "oziq-ovqat" emas, "guruch 1 kg" yoki "non") — kerak bo'lsa bir nechtasini
+                qo'shishingiz mumkin.
               </p>
             </div>
 
@@ -349,6 +403,16 @@ export default function NewBusinessPage() {
                 ) : null}
               </div>
             ) : null}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addProduct}
+              disabled={!productName.trim() || purchasePrice <= 0 || sellingPrice <= 0 || units <= 0}
+            >
+              <Plus className="h-4 w-4" />
+              Ro'yxatga qo'shish
+            </Button>
           </div>
         )}
         {step === 6 && (
@@ -398,14 +462,19 @@ export default function NewBusinessPage() {
             <p>{name} uchun AI biznes-reja yaratiladi. Moliyaviy model backendda hisoblanadi.</p>
             {problemDescription ? <p>Muammo: {problemDescription}</p> : null}
             {targetCustomer ? <p>Mijoz: {targetCustomer}</p> : null}
-            <p>
-              {productName}: {purchasePrice} → {sellingPrice}, {units} dona/oy, kapital {capital}.
-            </p>
+            <div>
+              {products.map((product, index) => (
+                <p key={index}>
+                  {product.name}: {product.purchasePrice} → {product.sellingPrice}, {product.expectedMonthlySales} dona/oy
+                </p>
+              ))}
+              <p>Kapital: {capital}</p>
+            </div>
           </div>
         )}
-        {step === 5 && (purchasePrice <= 0 || sellingPrice <= 0 || units <= 0) ? (
+        {step === 5 && products.length === 0 ? (
           <p className="text-xs text-amber-700">
-            Davom etish uchun avval "AI bilan hisoblab bering" tugmasini bosing yoki raqamlarni qo'lda kiriting.
+            Davom etish uchun kamida bitta mahsulotni "Ro'yxatga qo'shish" tugmasi bilan qo'shing.
           </p>
         ) : null}
         <div className="flex justify-between pt-2">
@@ -415,10 +484,7 @@ export default function NewBusinessPage() {
           {step < STEPS.length - 1 ? (
             <Button
               onClick={() => setStep((s) => s + 1)}
-              disabled={
-                (step === 0 && !experience) ||
-                (step === 5 && (purchasePrice <= 0 || sellingPrice <= 0 || units <= 0))
-              }
+              disabled={(step === 0 && !experience) || (step === 5 && products.length === 0)}
             >
               Keyingi
             </Button>

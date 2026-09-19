@@ -53,12 +53,16 @@ export class OpenAIProvider implements AIProvider {
   ): Promise<CopilotReply> {
     const competitors = context.market?.competitors ?? [];
     const isCompetitorQuestion = /raqobat|konkurent|competitor/i.test(question);
+    const isContactQuestion =
+      /kontakt|bog['‘’]lan|telefon|raqam|havola|link|manzil|contact/i.test(
+        question,
+      );
 
     const content = await this.complete([
       {
         role: 'system',
         content:
-          "Answer only from the supplied Business Radar JSON. If asked about competitors (raqobatchilar) — how many, who, their prices/locations — you MUST answer using the COMPETITORS array given separately below (each item has name, price, location, source: 'USER' means the entrepreneur entered it, 'MAP' means it was found on OpenStreetMap near the business's city (real business name/location, price usually unknown), 'AI_WEB' means it was found via automated web search and may be less precise). Never answer a competitor question with just a count — you MUST name every competitor from the array, one per line, e.g. '1. <name> — <price/location if known>'. Do not invent competitors not present in that array; if the array is empty, say so explicitly instead of inventing names. Return JSON {answer, citations}. Reply in Uzbek Latin.",
+          "Answer only from the supplied Business Radar JSON. If asked about competitors (raqobatchilar) — how many, who, their prices/locations, or their contact/link — you MUST answer using the COMPETITORS array given separately below (each item has name, price, location, contact — a phone number or social handle, only present if it was literally found, else null — sourceUrl — a link to the listing/profile, only present if found, else null — and source: 'USER' means the entrepreneur entered it, 'MAP' means it was found on OpenStreetMap near the business's city (real business name/location, price usually unknown), 'AI_WEB' means it was found via automated web search and may be less precise). Never answer a competitor question with just a count — you MUST name every competitor from the array, one per line, e.g. '1. <name> — <price/location if known> — kontakt: <contact or sourceUrl if either is present, else say kontakt ma'lum emas>'. Do not invent competitors, contacts, or links not present in that array; if the array is empty, say so explicitly instead of inventing names. Return JSON {answer, citations}. Reply in Uzbek Latin.",
       },
       {
         role: 'user',
@@ -71,17 +75,33 @@ export class OpenAIProvider implements AIProvider {
     ]);
     const reply = copilotReplySchema.parse(this.parseJson(content));
 
-    if (
+    const competitorNamesMissing =
       isCompetitorQuestion &&
       competitors.length > 0 &&
-      !competitors.some((c) => reply.answer.includes(c.name))
-    ) {
+      !competitors.some((c) => reply.answer.includes(c.name));
+    const availableContacts = competitors.filter(
+      (c) => c.contact || c.sourceUrl,
+    );
+    const contactsMissing =
+      isContactQuestion &&
+      availableContacts.length > 0 &&
+      !availableContacts.some(
+        (c) =>
+          (c.contact && reply.answer.includes(c.contact)) ||
+          (c.sourceUrl && reply.answer.includes(c.sourceUrl)),
+      );
+
+    if (competitorNamesMissing || contactsMissing) {
       const list = competitors
         .map((c, i) => {
-          const details = [c.price ? `${c.price} so'm` : null, c.location]
-            .filter(Boolean)
-            .join(', ');
-          return `${i + 1}. ${c.name}${details ? ` — ${details}` : ''}`;
+          const details = [
+            c.price ? `${c.price} so'm` : null,
+            c.location,
+            c.contact ? `kontakt: ${c.contact}` : null,
+            c.sourceUrl ? `havola: ${c.sourceUrl}` : null,
+          ].filter(Boolean);
+          if (details.length === 0) details.push("kontakt ma'lum emas");
+          return `${i + 1}. ${c.name} — ${details.join(', ')}`;
         })
         .join('\n');
       reply.answer = `${reply.answer}\n\nRaqobatchilar ro'yxati:\n${list}`;
@@ -110,7 +130,7 @@ export class OpenAIProvider implements AIProvider {
       {
         role: 'system',
         content:
-          "You research the local small-retail market for an entrepreneur in Uzbekistan using REAL web search results provided to you (title/snippet/url for each), for a specific product (productName) in a category/city/region. Extract ONLY competitor businesses from the search results that plausibly sell or produce something in the SAME product line as productName — e.g. if productName is 'ruchka' (pens), a carpet shop or a jewelry/gold shop is NOT a relevant competitor even if it appears in the search results, and must be excluded. When category is generic ('OTHER'/'Boshqa'), rely on productName, not the category label, to judge relevance. Do NOT invent competitors not grounded in the search results, and do NOT include irrelevant businesses just to fill the list — an empty competitors array is the correct, honest answer when nothing relevant was found. For each kept competitor return name, an estimated price in UZS if mentioned or clearly implied (else null), and location if mentioned (else null). From the same search results, infer a rough demand score (0-100), demand trend (UP/STABLE/DOWN), and price trend percent only if the search results give some signal; otherwise return null for these. Return strict JSON with keys: competitors (array of {name, estimatedPrice (number or null), location (string or null)}, max 10), demandScore (0-100 or null), demandTrend ('UP'|'STABLE'|'DOWN' or null), trendPercent (number or null), summaryUz (a short Uzbek Latin summary of what was found and from where, explicitly noting this is based on web search, not verified real-time data, and noting if irrelevant results were filtered out). Reply in Uzbek Latin for summaryUz.",
+          "You research the local small-retail market for an entrepreneur in Uzbekistan using REAL web search results provided to you (title/snippet/url for each), for a specific product (productName) in a category/city/region. Extract ONLY competitor businesses from the search results that plausibly sell or produce something in the SAME product line as productName — e.g. if productName is 'ruchka' (pens), a carpet shop or a jewelry/gold shop is NOT a relevant competitor even if it appears in the search results, and must be excluded. When category is generic ('OTHER'/'Boshqa'), rely on productName, not the category label, to judge relevance. Do NOT invent competitors not grounded in the search results, and do NOT include irrelevant businesses just to fill the list — an empty competitors array is the correct, honest answer when nothing relevant was found. For each kept competitor return name, an estimated price in UZS if mentioned or clearly implied (else null), location if mentioned (else null), contact (a phone number, Telegram/Instagram handle, or other direct contact detail ONLY if it literally appears in the title/snippet text — never guess or construct one, else null), and sourceUrl (the exact url of the search result this competitor was extracted from, so the entrepreneur can open it and see/contact them directly). From the same search results, infer a rough demand score (0-100), demand trend (UP/STABLE/DOWN), and price trend percent only if the search results give some signal; otherwise return null for these. Return strict JSON with keys: competitors (array of {name, estimatedPrice (number or null), location (string or null), contact (string or null), sourceUrl (string or null)}, max 10), demandScore (0-100 or null), demandTrend ('UP'|'STABLE'|'DOWN' or null), trendPercent (number or null), summaryUz (a short Uzbek Latin summary of what was found and from where, explicitly noting this is based on web search, not verified real-time data, and noting if irrelevant results were filtered out). Reply in Uzbek Latin for summaryUz.",
       },
       {
         role: 'user',

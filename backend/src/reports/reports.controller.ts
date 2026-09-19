@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import {
@@ -92,5 +100,15 @@ export class ReportsController {
       reportId: report.id,
     });
     return report;
+  }
+
+  @Delete(':id')
+  async remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const report = await this.prisma.businessReport.findUniqueOrThrow({
+      where: { id },
+    });
+    await this.ownership.assertBusinessOwner(report.businessId, user);
+    await this.prisma.businessReport.delete({ where: { id } });
+    return { success: true };
   }
 }

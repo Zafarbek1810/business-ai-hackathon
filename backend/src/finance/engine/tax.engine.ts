@@ -10,6 +10,14 @@ export interface TaxInput {
   mchjRegime?: MchjRegime;
   category?: BusinessCategory;
   isVatPayer?: boolean;
+  /**
+   * Foydalanuvchi o'zi bilgan/tasdiqlagan soliq yengilligi foizi (0-100), masalan
+   * IT Park rezidentligi, yangi tadbirkor uchun boshlang'ich davr yengilligi yoki
+   * hududiy imtiyoz. Aniq foizni va shartlarni soliq.uz yoki soliq inspeksiyasidan
+   * tekshiring — bu yerda faqat foydalanuvchi kiritgan qiymat qo'llaniladi, tizim
+   * hech qanday yengillikni avtomatik aniqlamaydi yoki taxmin qilmaydi.
+   */
+  benefitPercent?: number;
 }
 
 export interface TaxWarning {
@@ -27,6 +35,8 @@ export interface TaxResult {
   valid: boolean;
   warnings: TaxWarning[];
   disclaimers: string[];
+  benefitPercent: number;
+  benefitAmount: number;
 }
 
 const MAX_SAFE_BUSINESS_NUMBER = 1e15;
@@ -89,6 +99,24 @@ function invalidResult(
     valid: false,
     warnings,
     disclaimers: [],
+    benefitPercent: 0,
+    benefitAmount: 0,
+  };
+}
+
+function applyBenefit(
+  taxAmount: number,
+  benefitPercent: number | undefined,
+): { finalTax: number; clampedPercent: number; benefitAmount: number } {
+  const clampedPercent = Math.min(100, Math.max(0, benefitPercent ?? 0));
+  if (clampedPercent === 0) {
+    return { finalTax: taxAmount, clampedPercent: 0, benefitAmount: 0 };
+  }
+  const benefitAmount = roundMoney(taxAmount * (clampedPercent / 100));
+  return {
+    finalTax: roundMoney(taxAmount - benefitAmount),
+    clampedPercent,
+    benefitAmount,
   };
 }
 
@@ -135,24 +163,37 @@ export function calculateTax(input: TaxInput): TaxResult {
       });
       return invalidResult(input, warnings);
     }
-    const taxAmount = YATT_FIXED_RATES[input.category];
-    const netIncome = roundMoney(input.revenue - taxAmount);
+    const baseTaxAmount = YATT_FIXED_RATES[input.category];
+    const { finalTax, clampedPercent, benefitAmount } = applyBenefit(
+      baseTaxAmount,
+      input.benefitPercent,
+    );
+    const netIncome = roundMoney(input.revenue - finalTax);
     const effectiveRate =
-      input.revenue === 0 ? null : roundMoney(taxAmount / input.revenue, 6);
+      input.revenue === 0 ? null : roundMoney(finalTax / input.revenue, 6);
+
+    const yattDisclaimers = [
+      `Bu ${input.category} kategoriyasi uchun namunaviy oylik qat'iy soliq summasi (${baseTaxAmount.toLocaleString('uz-UZ')} so'm). YATT solig'i tushumingizga emas, hudud va faoliyat turiga qarab soliq idorasi tomonidan belgilanadi.`,
+      "Aniq stavkangizni soliq.uz portali yoki hududiy soliq inspeksiyasidan albatta tekshiring.",
+    ];
+    if (clampedPercent > 0) {
+      yattDisclaimers.push(
+        `Siz kiritgan ${clampedPercent}% yengillik qo'llanildi (${benefitAmount.toLocaleString('uz-UZ')} so'm kamaytirildi) — bu foydalanuvchi tomonidan kiritilgan qiymat, tizim yengillikka huquqni avtomatik tekshirmaydi. Huquqingizni (masalan IT Park rezidentligi, boshlang'ich davr yengilligi yoki hududiy imtiyoz) soliq.uz yoki soliq inspeksiyasidan tasdiqlang.`,
+      );
+    }
 
     return {
       entityType: 'YATT',
       mchjRegime: null,
-      taxAmount,
+      taxAmount: finalTax,
       vatEstimate: null,
       effectiveRate,
       netIncome,
       valid: true,
       warnings,
-      disclaimers: [
-        `Bu ${input.category} kategoriyasi uchun namunaviy oylik qat'iy soliq summasi (${taxAmount.toLocaleString('uz-UZ')} so'm). YATT solig'i tushumingizga emas, hudud va faoliyat turiga qarab soliq idorasi tomonidan belgilanadi.`,
-        "Aniq stavkangizni soliq.uz portali yoki hududiy soliq inspeksiyasidan albatta tekshiring.",
-      ],
+      disclaimers: yattDisclaimers,
+      benefitPercent: clampedPercent,
+      benefitAmount,
     };
   }
 
@@ -168,10 +209,14 @@ export function calculateTax(input: TaxInput): TaxResult {
   const disclaimers: string[] = [];
 
   if (input.mchjRegime === 'SIMPLIFIED') {
-    const taxAmount = roundMoney(input.revenue * MCHJ_SIMPLIFIED_RATE);
-    const netIncome = roundMoney(input.revenue - taxAmount);
+    const baseTaxAmount = roundMoney(input.revenue * MCHJ_SIMPLIFIED_RATE);
+    const { finalTax, clampedPercent, benefitAmount } = applyBenefit(
+      baseTaxAmount,
+      input.benefitPercent,
+    );
+    const netIncome = roundMoney(input.revenue - finalTax);
     const effectiveRate =
-      input.revenue === 0 ? null : roundMoney(taxAmount / input.revenue, 6);
+      input.revenue === 0 ? null : roundMoney(finalTax / input.revenue, 6);
 
     if (input.revenue * 12 > SIMPLIFIED_ANNUAL_THRESHOLD) {
       disclaimers.push(
@@ -181,17 +226,24 @@ export function calculateTax(input: TaxInput): TaxResult {
     disclaimers.push(
       "Yagona soliq stavkasi (4%) namunaviy — joriy stavkani soliq.uz'dan tekshiring.",
     );
+    if (clampedPercent > 0) {
+      disclaimers.push(
+        `Siz kiritgan ${clampedPercent}% yengillik qo'llanildi (${benefitAmount.toLocaleString('uz-UZ')} so'm kamaytirildi) — bu foydalanuvchi tomonidan kiritilgan qiymat, tizim yengillikka huquqni avtomatik tekshirmaydi. Huquqingizni soliq.uz yoki soliq inspeksiyasidan tasdiqlang.`,
+      );
+    }
 
     return {
       entityType: 'MCHJ',
       mchjRegime: 'SIMPLIFIED',
-      taxAmount,
+      taxAmount: finalTax,
       vatEstimate: null,
       effectiveRate,
       netIncome,
       valid: true,
       warnings,
       disclaimers,
+      benefitPercent: clampedPercent,
+      benefitAmount,
     };
   }
 
@@ -202,10 +254,14 @@ export function calculateTax(input: TaxInput): TaxResult {
     );
   }
   const taxableBase = Math.max(0, input.revenue - expenses);
-  const taxAmount = roundMoney(taxableBase * MCHJ_GENERAL_PROFIT_RATE);
-  const netIncome = roundMoney(input.revenue - expenses - taxAmount);
+  const baseTaxAmount = roundMoney(taxableBase * MCHJ_GENERAL_PROFIT_RATE);
+  const { finalTax, clampedPercent, benefitAmount } = applyBenefit(
+    baseTaxAmount,
+    input.benefitPercent,
+  );
+  const netIncome = roundMoney(input.revenue - expenses - finalTax);
   const effectiveRate =
-    input.revenue === 0 ? null : roundMoney(taxAmount / input.revenue, 6);
+    input.revenue === 0 ? null : roundMoney(finalTax / input.revenue, 6);
   const vatEstimate = input.isVatPayer
     ? roundMoney(input.revenue * VAT_RATE)
     : null;
@@ -218,16 +274,23 @@ export function calculateTax(input: TaxInput): TaxResult {
       `NDS (${(VAT_RATE * 100).toFixed(0)}%) odatda mijozdan alohida undiriladi va sof foydangizga qo'shilmaydi — bu faqat ma'lumot uchun ko'rsatilgan taxminiy summa.`,
     );
   }
+  if (clampedPercent > 0) {
+    disclaimers.push(
+      `Siz kiritgan ${clampedPercent}% yengillik qo'llanildi (${benefitAmount.toLocaleString('uz-UZ')} so'm kamaytirildi) — bu foydalanuvchi tomonidan kiritilgan qiymat, tizim yengillikka huquqni avtomatik tekshirmaydi. Huquqingizni soliq.uz yoki soliq inspeksiyasidan tasdiqlang.`,
+    );
+  }
 
   return {
     entityType: 'MCHJ',
     mchjRegime: 'GENERAL',
-    taxAmount,
+    taxAmount: finalTax,
     vatEstimate,
     effectiveRate,
     netIncome,
     valid: true,
     warnings,
     disclaimers,
+    benefitPercent: clampedPercent,
+    benefitAmount,
   };
 }

@@ -207,6 +207,8 @@ export interface TaxResult {
   valid: boolean;
   warnings: Array<{ code: string; message: string }>;
   disclaimers: string[];
+  benefitPercent: number;
+  benefitAmount: number;
 }
 
 export interface Scenario {

@@ -39,6 +39,8 @@ export interface MarketContextResult {
     name: string;
     price: number;
     location: string | null;
+    contact: string | null;
+    sourceUrl: string | null;
     source: string;
   }>;
   demandScore: number | null;
@@ -125,7 +127,9 @@ export class BusinessesService {
         ...(dto.category !== undefined ? { category: dto.category } : {}),
         ...(dto.region !== undefined ? { region: dto.region } : {}),
         ...(dto.city !== undefined ? { city: dto.city } : {}),
-        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.description !== undefined
+          ? { description: dto.description }
+          : {}),
         ...(dto.availableCapital !== undefined
           ? { availableCapital: dto.availableCapital }
           : {}),
@@ -358,9 +362,7 @@ export class BusinessesService {
       this.prisma.competitor.findMany({ where: { businessId } }),
       this.prisma.marketResearch.findUnique({ where: { businessId } }),
     ]);
-    const pricedCompetitors = competitors.filter(
-      (c) => toNumber(c.price) > 0,
-    );
+    const pricedCompetitors = competitors.filter((c) => toNumber(c.price) > 0);
     const prices = pricedCompetitors.map((c) => toNumber(c.price));
     const count = competitors.length;
     return {
@@ -381,6 +383,8 @@ export class BusinessesService {
         name: c.name,
         price: toNumber(c.price),
         location: c.location,
+        contact: c.contact,
+        sourceUrl: c.sourceUrl,
         source: c.source,
       })),
       demandScore: research?.demandScore ?? null,

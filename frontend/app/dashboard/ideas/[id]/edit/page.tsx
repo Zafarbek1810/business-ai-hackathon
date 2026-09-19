@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,13 @@ function rentAmount(business: Business): number {
   return toNumber(rent?.amount);
 }
 
+type Product = {
+  name: string;
+  purchasePrice: number;
+  sellingPrice: number;
+  expectedMonthlySales: number;
+};
+
 export default function EditBusinessPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
@@ -51,6 +58,7 @@ export default function EditBusinessPage() {
   const [category, setCategory] = useState<BusinessCategory>("OTHER");
   const [region, setRegion] = useState(REGIONS[0]);
   const [city, setCity] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
   const [productName, setProductName] = useState("");
   const [purchasePrice, setPurchasePrice] = useState(0);
   const [sellingPrice, setSellingPrice] = useState(0);
@@ -66,21 +74,45 @@ export default function EditBusinessPage() {
   useEffect(() => {
     const business = businessQuery.data;
     if (!business || hydrated) return;
-    const product = business.products[0];
     setName(business.name);
     setDescription(business.description ?? "");
     setCategory(business.category);
     setRegion(business.region);
     setCity(business.city);
-    setProductName(product?.name ?? "");
-    setPurchasePrice(toNumber(product?.purchasePrice));
-    setSellingPrice(toNumber(product?.sellingPrice));
-    setUnits(product?.expectedMonthlySales ?? 0);
+    setProducts(
+      business.products.map((product) => ({
+        name: product.name,
+        purchasePrice: toNumber(product.purchasePrice),
+        sellingPrice: toNumber(product.sellingPrice),
+        expectedMonthlySales: product.expectedMonthlySales,
+      })),
+    );
     setCapital(toNumber(business.availableCapital));
     setRent(rentAmount(business));
     setStartDate(toDateInput(business.startDate));
     setHydrated(true);
   }, [businessQuery.data, hydrated]);
+
+  function addProduct() {
+    if (!productName.trim() || purchasePrice <= 0 || sellingPrice <= 0 || units <= 0) return;
+    setProducts((prev) => [
+      ...prev,
+      {
+        name: productName.trim(),
+        purchasePrice,
+        sellingPrice,
+        expectedMonthlySales: units,
+      },
+    ]);
+    setProductName("");
+    setPurchasePrice(0);
+    setSellingPrice(0);
+    setUnits(0);
+  }
+
+  function removeProduct(index: number) {
+    setProducts((prev) => prev.filter((_, i) => i !== index));
+  }
 
   async function estimateWithAi() {
     setEstimating(true);
@@ -109,18 +141,12 @@ export default function EditBusinessPage() {
       toast.error("Biznes nomini kiriting.");
       return;
     }
-    if (!productName.trim()) {
-      toast.error("Mahsulot nomini kiriting.");
+    if (products.length === 0) {
+      toast.error("Kamida bitta mahsulot qo'shing.");
       return;
     }
     setLoading(true);
     try {
-      const extras = (businessQuery.data?.products ?? []).slice(1).map((item) => ({
-        name: item.name,
-        purchasePrice: toNumber(item.purchasePrice),
-        sellingPrice: toNumber(item.sellingPrice),
-        expectedMonthlySales: item.expectedMonthlySales,
-      }));
       const otherExpenses = (businessQuery.data?.expenses ?? [])
         .filter((item) => item.category !== "RENT")
         .map((item) => ({
@@ -138,15 +164,7 @@ export default function EditBusinessPage() {
         description: description.trim() || undefined,
         availableCapital: capital,
         startDate: new Date(startDate).toISOString(),
-        products: [
-          {
-            name: productName.trim(),
-            purchasePrice,
-            sellingPrice,
-            expectedMonthlySales: units,
-          },
-          ...extras,
-        ],
+        products,
         expenses: [
           {
             kind: "FIXED",
@@ -241,48 +259,91 @@ export default function EditBusinessPage() {
             <Input value={city} onChange={(e) => setCity(e.target.value)} />
           </div>
         </div>
-        <div>
-          <Label>Mahsulot</Label>
-          <Input value={productName} onChange={(e) => setProductName(e.target.value)} />
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="space-y-3">
+          <Label>Mahsulotlar</Label>
+          {products.length > 0 ? (
+            <div className="space-y-2">
+              {products.map((product, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                >
+                  <div className="text-sm">
+                    <p className="font-medium text-navy-900">{product.name}</p>
+                    <p className="text-xs text-slate-500">
+                      {product.purchasePrice.toLocaleString("uz-UZ")} → {product.sellingPrice.toLocaleString("uz-UZ")} so‘m ·{" "}
+                      {product.expectedMonthlySales.toLocaleString("uz-UZ")} dona/oy
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="O'chirish"
+                    onClick={() => removeProduct(index)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           <div>
-            <Label>Xarid narxi</Label>
+            <Label>Yangi mahsulot qo'shish</Label>
             <Input
-              type="number"
-              value={purchasePrice}
-              onChange={(e) => setPurchasePrice(Number(e.target.value))}
+              placeholder="Masalan: guruch 1 kg, non, erkaklar krossovkasi"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
             />
           </div>
-          <div>
-            <Label>Sotish narxi</Label>
-            <Input
-              type="number"
-              value={sellingPrice}
-              onChange={(e) => setSellingPrice(Number(e.target.value))}
-            />
+          <div className="grid gap-3 md:grid-cols-3">
+            <div>
+              <Label>Xarid narxi</Label>
+              <Input
+                type="number"
+                value={purchasePrice}
+                onChange={(e) => setPurchasePrice(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label>Sotish narxi</Label>
+              <Input
+                type="number"
+                value={sellingPrice}
+                onChange={(e) => setSellingPrice(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label>Oylik savdo (dona)</Label>
+              <Input type="number" value={units} onChange={(e) => setUnits(Number(e.target.value))} />
+            </div>
           </div>
-          <div>
-            <Label>Oylik savdo (dona)</Label>
-            <Input type="number" value={units} onChange={(e) => setUnits(Number(e.target.value))} />
+          <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3">
+            <p className="text-sm text-indigo-900">
+              Narxlarni bilmasangiz, AI yordamida taxmin qilishingiz mumkin.
+            </p>
+            <Button
+              type="button"
+              variant="accent"
+              size="sm"
+              className="mt-2"
+              onClick={() => void estimateWithAi()}
+              disabled={estimating}
+            >
+              <Sparkles className="h-4 w-4" />
+              {estimating ? "AI hisoblamoqda..." : "AI yordamida taxmin qilish"}
+            </Button>
+            {estimateReason ? <p className="mt-2 text-xs text-indigo-800">{estimateReason}</p> : null}
           </div>
-        </div>
-        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3">
-          <p className="text-sm text-indigo-900">
-            Narxlarni qayta taxmin qilish kerak bo‘lsa, AI yordamida yangilashingiz mumkin.
-          </p>
           <Button
             type="button"
-            variant="accent"
-            size="sm"
-            className="mt-2"
-            onClick={() => void estimateWithAi()}
-            disabled={estimating}
+            variant="outline"
+            onClick={addProduct}
+            disabled={!productName.trim() || purchasePrice <= 0 || sellingPrice <= 0 || units <= 0}
           >
-            <Sparkles className="h-4 w-4" />
-            {estimating ? "AI hisoblamoqda..." : "AI yordamida taxmin qilish"}
+            <Plus className="h-4 w-4" />
+            Ro'yxatga qo'shish
           </Button>
-          {estimateReason ? <p className="mt-2 text-xs text-indigo-800">{estimateReason}</p> : null}
         </div>
         <div>
           <Label>Mavjud kapital (so‘m)</Label>

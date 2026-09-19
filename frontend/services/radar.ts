@@ -51,6 +51,7 @@ export const financeApi = {
     mchjRegime?: MchjRegime;
     category?: string;
     isVatPayer?: boolean;
+    benefitPercent?: number;
   }) => api<TaxResult>("/finance/tax-calculate", { method: "POST", body: JSON.stringify(payload) }),
   scenarios: (businessId: string) => api<Scenario[]>(`/businesses/${businessId}/scenarios`),
   upsertScenario: (businessId: string, payload: { type: string; monthlyUnits: number }) =>
@@ -182,6 +183,8 @@ export const reportApi = {
   get: (id: string) => api<BusinessReport>(`/reports/${id}`),
   create: (businessId: string) =>
     api<BusinessReport>("/reports", { method: "POST", body: JSON.stringify({ businessId }) }),
+  remove: (id: string) =>
+    api<{ success: boolean }>(`/reports/${id}`, { method: "DELETE" }),
 };
 
 export const usersApi = {

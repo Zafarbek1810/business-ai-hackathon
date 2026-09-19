@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { aiApi } from "@/services/radar";
+import { renderAnswerWithLinks } from "@/components/ai/render-answer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,7 +55,7 @@ export function CopilotPanel({ businessId }: { businessId: string }) {
         </Button>
         {answer ? (
           <div className="rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-700">
-            {answer}
+            {renderAnswerWithLinks(answer)}
             <ul className="mt-3 space-y-1 text-xs text-slate-500">
               {citations.map((item) => (
                 <li key={item}>Asos: {item}</li>

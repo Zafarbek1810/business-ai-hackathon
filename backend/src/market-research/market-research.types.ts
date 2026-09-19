@@ -7,6 +7,8 @@ export const marketResearchSchema = z.object({
         name: z.string().min(1),
         estimatedPrice: z.number().nonnegative().nullable(),
         location: z.string().nullable(),
+        contact: z.string().nullable(),
+        sourceUrl: z.string().nullable(),
       }),
     )
     .max(10),

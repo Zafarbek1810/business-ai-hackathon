@@ -49,6 +49,19 @@ function makeContext(
   };
 }
 
+type Competitor = BusinessAIContext['market']['competitors'][number];
+
+function comp(overrides: Partial<Competitor> & { name: string }): Competitor {
+  return {
+    price: 0,
+    location: null,
+    contact: null,
+    sourceUrl: null,
+    source: 'MAP',
+    ...overrides,
+  };
+}
+
 interface ChatRequestBody {
   messages: Array<{ role: string; content: string }>;
 }
@@ -89,12 +102,7 @@ describe('OpenAIProvider.chat — competitor questions', () => {
 
   it('sends the competitors array as its own labeled block, not buried in context', async () => {
     const competitors = [
-      {
-        name: 'Samsung',
-        price: 0,
-        location: 'Al-Xorazmiy koʻchasi',
-        source: 'MAP',
-      },
+      comp({ name: 'Samsung', location: 'Al-Xorazmiy koʻchasi' }),
     ];
     mockFetchOnce('Bitta raqobatchi bor: Samsung.');
     await provider.chat(
@@ -112,13 +120,8 @@ describe('OpenAIProvider.chat — competitor questions', () => {
 
   it('passes through the model answer when it already names every competitor', async () => {
     const competitors = [
-      {
-        name: 'Darital Shoes',
-        price: 120000,
-        location: 'Urganch',
-        source: 'MAP',
-      },
-      { name: 'GSM Master', price: 0, location: null, source: 'MAP' },
+      comp({ name: 'Darital Shoes', price: 120000, location: 'Urganch' }),
+      comp({ name: 'GSM Master' }),
     ];
     mockFetchOnce(
       '1. Darital Shoes\n2. GSM Master — bular sizning raqobatchilaringiz.',
@@ -136,8 +139,8 @@ describe('OpenAIProvider.chat — competitor questions', () => {
 
   it('appends a deterministic competitor list when the model answers with only a count', async () => {
     const competitors = [
-      { name: 'MAN Avtosalon', price: 0, location: null, source: 'MAP' },
-      { name: 'Krytiy rynok', price: 0, location: null, source: 'MAP' },
+      comp({ name: 'MAN Avtosalon' }),
+      comp({ name: 'Krytiy rynok' }),
     ];
     mockFetchOnce('Ushbu biznesda 2 ta raqobatchi mavjud.');
     const reply = await provider.chat(
@@ -151,9 +154,7 @@ describe('OpenAIProvider.chat — competitor questions', () => {
   });
 
   it('does not append a fallback list for non-competitor questions', async () => {
-    const competitors = [
-      { name: 'MAN Avtosalon', price: 0, location: null, source: 'MAP' },
-    ];
+    const competitors = [comp({ name: 'MAN Avtosalon' })];
     mockFetchOnce('Bu oyda sof foydangiz 500 000 soʻm.');
     const reply = await provider.chat(
       makeContext(competitors),
@@ -175,8 +176,8 @@ describe('OpenAIProvider.chat — competitor questions', () => {
 
   it('does not append a fallback when the answer already partially names competitors', async () => {
     const competitors = [
-      { name: 'MAN Avtosalon', price: 0, location: null, source: 'MAP' },
-      { name: 'Samsung', price: 0, location: null, source: 'MAP' },
+      comp({ name: 'MAN Avtosalon' }),
+      comp({ name: 'Samsung' }),
     ];
     mockFetchOnce('Faqat MAN Avtosalon haqida maʻlumot bor.');
     const reply = await provider.chat(
@@ -186,5 +187,58 @@ describe('OpenAIProvider.chat — competitor questions', () => {
 
     // model named at least one competitor verbatim -> fallback should not trigger
     expect(reply.answer).toBe('Faqat MAN Avtosalon haqida maʻlumot bor.');
+  });
+});
+
+describe('OpenAIProvider.chat — contact questions', () => {
+  const provider = new OpenAIProvider('key', 'model', 'https://example.com/v1');
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('appends contact/link details when the model answer omits them', async () => {
+    const competitors = [
+      comp({
+        name: 'kral_brand_uz',
+        contact: '+998901234567',
+        sourceUrl: 'https://instagram.com/kral_brand_uz',
+      }),
+      comp({ name: 'aslkiyim', sourceUrl: 'https://olx.uz/item/123' }),
+    ];
+    mockFetchOnce('Raqobatchilaringiz: kral_brand_uz va aslkiyim.');
+    const reply = await provider.chat(
+      makeContext(competitors),
+      'shularning kontaktini ber',
+    );
+
+    expect(reply.answer).toContain('+998901234567');
+    expect(reply.answer).toContain('https://olx.uz/item/123');
+  });
+
+  it('does not append anything when no competitor has a contact or link', async () => {
+    const competitors = [comp({ name: 'kral_brand_uz' })];
+    mockFetchOnce('Kontakt maʻlumoti mavjud emas.');
+    const reply = await provider.chat(
+      makeContext(competitors),
+      'kontaktlarini bera olasanmi',
+    );
+
+    expect(reply.answer).toBe('Kontakt maʻlumoti mavjud emas.');
+  });
+
+  it('does not append a fallback when the model already included the contact', async () => {
+    const competitors = [
+      comp({ name: 'kral_brand_uz', contact: '+998901234567' }),
+    ];
+    mockFetchOnce('kral_brand_uz bilan +998901234567 orqali bogʻlaning.');
+    const reply = await provider.chat(
+      makeContext(competitors),
+      'telefon raqamini ber',
+    );
+
+    expect(reply.answer).toBe(
+      'kral_brand_uz bilan +998901234567 orqali bogʻlaning.',
+    );
   });
 });
