@@ -49,19 +49,35 @@ function makeContext(
   };
 }
 
+interface ChatRequestBody {
+  messages: Array<{ role: string; content: string }>;
+}
+
+function getFetchMock(): jest.Mock {
+  return (global as unknown as { fetch: jest.Mock }).fetch;
+}
+
+function lastRequestBody(): ChatRequestBody {
+  const call = getFetchMock().mock.calls[0] as [string, { body: string }];
+  return JSON.parse(call[1].body) as ChatRequestBody;
+}
+
 function mockFetchOnce(answer: string, citations: string[] = ['c1']) {
-  (global as unknown as { fetch: jest.Mock }).fetch = jest.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      choices: [
-        {
-          message: {
-            content: JSON.stringify({ answer, citations }),
-          },
-        },
-      ],
-    }),
-  });
+  (global as unknown as { fetch: jest.Mock }).fetch = jest
+    .fn()
+    .mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ answer, citations }),
+              },
+            },
+          ],
+        }),
+    });
 }
 
 describe('OpenAIProvider.chat — competitor questions', () => {
@@ -73,26 +89,39 @@ describe('OpenAIProvider.chat — competitor questions', () => {
 
   it('sends the competitors array as its own labeled block, not buried in context', async () => {
     const competitors = [
-      { name: 'Samsung', price: 0, location: 'Al-Xorazmiy koʻchasi', source: 'MAP' },
+      {
+        name: 'Samsung',
+        price: 0,
+        location: 'Al-Xorazmiy koʻchasi',
+        source: 'MAP',
+      },
     ];
     mockFetchOnce('Bitta raqobatchi bor: Samsung.');
-    await provider.chat(makeContext(competitors), 'ushbu biznesdagi raqobatchilar kimlar');
-
-    const fetchMock = (global as unknown as { fetch: jest.Mock }).fetch;
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    const userMessage = JSON.parse(
-      body.messages.find((m: { role: string }) => m.role === 'user').content,
+    await provider.chat(
+      makeContext(competitors),
+      'ushbu biznesdagi raqobatchilar kimlar',
     );
-    expect(userMessage.COMPETITORS).toEqual(competitors);
+
+    const body = lastRequestBody();
+    const userMessage = body.messages.find((m) => m.role === 'user');
+    const parsed = JSON.parse(userMessage!.content) as {
+      COMPETITORS: unknown;
+    };
+    expect(parsed.COMPETITORS).toEqual(competitors);
   });
 
   it('passes through the model answer when it already names every competitor', async () => {
     const competitors = [
-      { name: 'Darital Shoes', price: 120000, location: 'Urganch', source: 'MAP' },
+      {
+        name: 'Darital Shoes',
+        price: 120000,
+        location: 'Urganch',
+        source: 'MAP',
+      },
       { name: 'GSM Master', price: 0, location: null, source: 'MAP' },
     ];
     mockFetchOnce(
-      "1. Darital Shoes\n2. GSM Master — bular sizning raqobatchilaringiz.",
+      '1. Darital Shoes\n2. GSM Master — bular sizning raqobatchilaringiz.',
     );
     const reply = await provider.chat(
       makeContext(competitors),
@@ -126,14 +155,20 @@ describe('OpenAIProvider.chat — competitor questions', () => {
       { name: 'MAN Avtosalon', price: 0, location: null, source: 'MAP' },
     ];
     mockFetchOnce('Bu oyda sof foydangiz 500 000 soʻm.');
-    const reply = await provider.chat(makeContext(competitors), 'sof foydam qancha');
+    const reply = await provider.chat(
+      makeContext(competitors),
+      'sof foydam qancha',
+    );
 
     expect(reply.answer).not.toContain('MAN Avtosalon');
   });
 
   it('does not append anything when there are no competitors at all', async () => {
-    mockFetchOnce("Hozircha raqobatchilar bazada mavjud emas.");
-    const reply = await provider.chat(makeContext([]), 'raqobatchilarim kimlar');
+    mockFetchOnce('Hozircha raqobatchilar bazada mavjud emas.');
+    const reply = await provider.chat(
+      makeContext([]),
+      'raqobatchilarim kimlar',
+    );
 
     expect(reply.answer).toBe('Hozircha raqobatchilar bazada mavjud emas.');
   });

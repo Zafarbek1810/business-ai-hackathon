@@ -52,8 +52,7 @@ export class OpenAIProvider implements AIProvider {
     question: string,
   ): Promise<CopilotReply> {
     const competitors = context.market?.competitors ?? [];
-    const isCompetitorQuestion =
-      /raqobat|konkurent|competitor/i.test(question);
+    const isCompetitorQuestion = /raqobat|konkurent|competitor/i.test(question);
 
     const content = await this.complete([
       {
