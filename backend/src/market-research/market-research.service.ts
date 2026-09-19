@@ -54,6 +54,7 @@ export class MarketResearchService {
     }
     const business = await this.prisma.business.findUnique({
       where: { id: businessId },
+      include: { products: { take: 1 } },
     });
     if (!business) {
       return false;
@@ -61,9 +62,12 @@ export class MarketResearchService {
 
     try {
       const label = CATEGORY_LABELS_UZ[business.category] ?? "do'kon";
+      const productName = business.products[0]?.name ?? null;
       const searchApiKey = this.config.get<string>('SEARCH_API_KEY', '');
 
-      const query = `${label} ${business.city} ${business.region} narxlari`;
+      const query = productName
+        ? `"${productName}" narxi sotib olish ${business.city} ${business.region}`
+        : `${label} ${business.city} ${business.region} narxlari`;
       const searchResults = await webSearch(query, searchApiKey);
 
       let research;
@@ -83,6 +87,7 @@ export class MarketResearchService {
             category: business.category,
             region: business.region,
             city: business.city,
+            productName,
             searchResults,
           });
           research = marketResearchSchema.parse(raw);

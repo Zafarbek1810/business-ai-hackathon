@@ -22,5 +22,6 @@ export interface MarketResearchInput {
   category: string;
   region: string;
   city: string;
+  productName: string | null;
   searchResults: Array<{ title: string; snippet: string; url: string }>;
 }
