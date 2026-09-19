@@ -2,6 +2,8 @@ import { api } from "@/services/api";
 import { API_URL, TOKEN_KEY } from "@/config/env";
 import type {
   AIInsight,
+  AdminDashboard,
+  AdminUser,
   AuthResponse,
   Business,
   BusinessReport,
@@ -9,11 +11,14 @@ import type {
   FinanceResult,
   LoanResult,
   MchjRegime,
+  PlanStats,
   RadarResponse,
   Scenario,
+  SystemSetting,
   TaxEntityType,
   TaxResult,
 } from "@/types/api";
+import type { PlanDefinition, PricingPageContent, PublicPlansResponse } from "@/config/plans";
 
 export const authApi = {
   login: (email: string, password: string) =>
@@ -170,22 +175,48 @@ export const usersApi = {
     ),
 };
 
+export const plansApi = {
+  public: () => api<PublicPlansResponse>("/plans"),
+};
+
+export interface AdminUserPayload {
+  email?: string;
+  password?: string;
+  name?: string;
+  role?: string;
+  plan?: string;
+  locale?: string;
+}
+
 export const adminApi = {
-  dashboard: () =>
-    api<{
-      totalUsers: number;
-      activeBusinesses: number;
-      analysesCreated: number;
-      aiAnalyses: number;
-      reports: number;
-      popularCategories: Array<{ category: string; _count: { category: number } }>;
-    }>("/admin/dashboard"),
-  users: () =>
-    api<Array<{ id: string; email: string; name: string; role: string; plan: string; createdAt: string; _count: { businesses: number } }>>(
-      "/admin/users",
-    ),
-  businesses: () =>
-    api<Array<{ id: string; name: string; category: string; isDemo: boolean; user: { email: string } }>>(
-      "/admin/businesses",
+  dashboard: () => api<AdminDashboard>("/admin/dashboard"),
+  users: (params?: { q?: string; role?: string; plan?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.q) search.set("q", params.q);
+    if (params?.role) search.set("role", params.role);
+    if (params?.plan) search.set("plan", params.plan);
+    const query = search.toString();
+    return api<AdminUser[]>(`/admin/users${query ? `?${query}` : ""}`);
+  },
+  getUser: (id: string) => api<AdminUser>(`/admin/users/${id}`),
+  createUser: (payload: AdminUserPayload) =>
+    api<AdminUser>("/admin/users", { method: "POST", body: JSON.stringify(payload) }),
+  updateUser: (id: string, payload: AdminUserPayload) =>
+    api<AdminUser>(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteUser: (id: string) => api<{ success: boolean }>(`/admin/users/${id}`, { method: "DELETE" }),
+  plans: () => api<PlanDefinition[]>("/admin/plans"),
+  updatePlans: (plans: PlanDefinition[]) =>
+    api<PlanDefinition[]>("/admin/plans", { method: "PATCH", body: JSON.stringify({ plans }) }),
+  pricingPage: () => api<PricingPageContent>("/admin/pricing-page"),
+  updatePricingPage: (page: PricingPageContent) =>
+    api<PricingPageContent>("/admin/pricing-page", { method: "PATCH", body: JSON.stringify(page) }),
+  planStats: () => api<PlanStats>("/admin/plan-stats"),
+  settings: () => api<SystemSetting[]>("/admin/settings"),
+  updateSettings: (items: Array<{ key: string; value: string }>) =>
+    api<SystemSetting[]>("/admin/settings", { method: "PATCH", body: JSON.stringify({ items }) }),
+  updateProfile: (payload: { name?: string; password?: string }) =>
+    api<{ id: string; email: string; name: string; role: string; plan: string; locale: string }>(
+      "/admin/profile",
+      { method: "PATCH", body: JSON.stringify(payload) },
     ),
 };

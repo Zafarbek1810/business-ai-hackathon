@@ -16,6 +16,43 @@ export interface PlanDefinition {
   cta: string;
 }
 
+export type ComparisonFormat = "text" | "bool" | "money";
+
+export interface PlanComparisonRow {
+  label: string;
+  format: ComparisonFormat;
+  values: Record<string, string | boolean | number>;
+}
+
+export interface PricingPageContent {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  settingsTitle: string;
+  settingsSubtitle: string;
+  yearlyHint: string;
+  monthlyToggle: string;
+  yearlyToggle: string;
+  highlightedBadge: string;
+  freeForever: string;
+  perMonth: string;
+  perYear: string;
+  currentPlanLabel: string;
+  comparisonFeatureLabel: string;
+  comparisonLimitLabel: string;
+  comparisonMonthlyLabel: string;
+  comparisonYearlyLabel: string;
+  unlimitedLabel: string;
+  highlights: Array<{ title: string; body: string }>;
+  faqs: Array<{ q: string; a: string }>;
+}
+
+export interface PublicPlansResponse {
+  plans: PlanDefinition[];
+  comparison: PlanComparisonRow[];
+  page: PricingPageContent;
+}
+
 export const PLANS: PlanDefinition[] = [
   {
     id: "FREE",
@@ -78,22 +115,108 @@ export const PLANS: PlanDefinition[] = [
   },
 ];
 
-export const PLAN_COMPARISON = [
-  { label: "Bizneslar soni", values: { FREE: "1", PRO: "5", BUSINESS: "Cheksiz" } },
-  { label: "Moliyaviy kalkulyator", values: { FREE: true, PRO: true, BUSINESS: true } },
-  { label: "Kredit va soliq", values: { FREE: true, PRO: true, BUSINESS: true } },
-  { label: "Biznes-reja hujjati", values: { FREE: "1 ta", PRO: "Cheksiz", BUSINESS: "Cheksiz" } },
-  { label: "Ssenariy tahlili", values: { FREE: false, PRO: true, BUSINESS: true } },
-  { label: "To‘liq AI tahlil", values: { FREE: false, PRO: true, BUSINESS: true } },
-  { label: "Xavf tahlili", values: { FREE: false, PRO: true, BUSINESS: true } },
-  { label: "Jamoa va API", values: { FREE: false, PRO: false, BUSINESS: true } },
-] as const;
-
 export const PLAN_LABELS: Record<Plan, string> = {
   FREE: "Bepul",
   PRO: "Pro",
   BUSINESS: "Business",
 };
+
+export const DEFAULT_PRICING_PAGE: PricingPageContent = {
+  eyebrow: "Tariflar va foyda",
+  title: "Platforma qanday pul topadi — va sizga nima qoladi",
+  subtitle:
+    "Maslahatchidan biznes-reja 3–8 mln so‘m. Pro yillik tarif shu xizmatning bir qismini doimiy yangilab beradi. To‘lov shlyuzi hozircha demo: arxitektura tayyor, karta yechilmaydi.",
+  settingsTitle: "Tarifni tanlang",
+  settingsSubtitle:
+    "To‘lov shlyuzi hozircha demo: tarifni tanlasangiz, biznes limiti darhol yangilanadi. Karta yechilmaydi.",
+  yearlyHint: "Yillik to‘lovda 2 oy bepul.",
+  monthlyToggle: "Oylik",
+  yearlyToggle: "Yillik · 2 oy bepul",
+  highlightedBadge: "Eng ko‘p tanlanadi",
+  freeForever: "Doim bepul",
+  perMonth: "oyiga",
+  perYear: "yiliga",
+  currentPlanLabel: "Joriy tarif",
+  comparisonFeatureLabel: "Imkoniyat",
+  comparisonLimitLabel: "Bizneslar soni",
+  comparisonMonthlyLabel: "Oylik narx",
+  comparisonYearlyLabel: "Yillik narx",
+  unlimitedLabel: "Cheksiz",
+  highlights: [
+    {
+      title: "Mijoz uchun foyda",
+      body: "Bitta yomon investitsiyani oldini olish 10–50 mln so‘mni saqlab qolishi mumkin. Pro oyiga 99 ming so‘m.",
+    },
+    {
+      title: "Freemium voronkasi",
+      body: "Bepulda g‘oya sinovdan o‘tadi. Maqsad: 8–10% foydalanuvchi Pro ga o‘tadi — qiymatni ko‘rgach to‘laydi.",
+    },
+    {
+      title: "1-yillik maqsad",
+      body: "1 000 Pro + 100 Business ≈ 129 mln so‘m/oy takrorlanuvchi tushum. Yillik tarif LTV ni oshiradi.",
+    },
+  ],
+  faqs: [
+    {
+      q: "Nega pul to‘lashadi?",
+      a: "Bepul tarif g‘oyani ochadi. Pro esa bir nechta biznes, ssenariy va AI copilotni beradi — maslahatchiga 3–8 mln to‘lashdan arzonroq.",
+    },
+    {
+      q: "Qanday foyda chiqadi?",
+      a: "Asosiy tushum Pro va Business obunasidan. Yillik to‘lov 2 oy bepul: LTV oshadi, churn kamayadi. Keyingi bosqich — maslahatchilar uchun white-label.",
+    },
+    {
+      q: "To‘lov hozir ishlaydimi?",
+      a: "Yo‘q. MVP da tariflar va limitlar tayyor, karta shlyuzi keyingi sprint. Demo rejimida Sozlamalardan tarifni almashtirish mumkin.",
+    },
+    {
+      q: "Bepul foydalanuvchi nima qila oladi?",
+      a: "1 ta biznes, kalkulyator, kredit/soliq va bitta biznes-reja. Limitga yetganda Pro ga o‘tish taklif qilinadi.",
+    },
+  ],
+};
+
+export function buildPlanComparison(
+  plans: PlanDefinition[],
+  page: PricingPageContent = DEFAULT_PRICING_PAGE,
+): PlanComparisonRow[] {
+  const valuesFor = (pick: (plan: PlanDefinition) => string | boolean | number) =>
+    Object.fromEntries(plans.map((plan) => [plan.id, pick(plan)]));
+
+  const rows: PlanComparisonRow[] = [
+    {
+      label: page.comparisonLimitLabel,
+      format: "text",
+      values: valuesFor((plan) =>
+        plan.businessLimit === null ? page.unlimitedLabel : String(plan.businessLimit),
+      ),
+    },
+    {
+      label: page.comparisonMonthlyLabel,
+      format: "money",
+      values: valuesFor((plan) => plan.monthlyPrice),
+    },
+    {
+      label: page.comparisonYearlyLabel,
+      format: "money",
+      values: valuesFor((plan) => plan.yearlyPrice),
+    },
+  ];
+
+  const seen = new Set<string>();
+  for (const plan of plans) {
+    for (const feature of plan.features) {
+      if (seen.has(feature)) continue;
+      seen.add(feature);
+      rows.push({
+        label: feature,
+        format: "bool",
+        values: valuesFor((item) => item.features.includes(feature)),
+      });
+    }
+  }
+  return rows;
+}
 
 export function getPlan(id: Plan | null | undefined): PlanDefinition {
   return PLANS.find((plan) => plan.id === id) ?? PLANS[0];

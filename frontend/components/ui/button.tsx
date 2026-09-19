@@ -13,6 +13,7 @@ const buttonVariants = cva(
         ghost: "hover:bg-slate-100",
         danger: "bg-red-600 text-white hover:bg-red-700",
         accent: "bg-indigo-600 text-white hover:bg-indigo-700",
+        gold: "bg-gradient-to-r from-gold-300 to-gold-500 text-navy-950 hover:from-gold-400 hover:to-gold-500",
       },
       size: {
         default: "h-10 px-4",

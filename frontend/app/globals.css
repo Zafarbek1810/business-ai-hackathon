@@ -6,12 +6,23 @@
   --color-navy-800: #122948;
   --color-navy-700: #1b3a63;
   --color-navy-600: #274c80;
+  --color-gold-300: #f0d48a;
+  --color-gold-400: #e2bc5a;
+  --color-gold-500: #c9a227;
+  --color-radar-400: #4da3ff;
+  --color-radar-500: #2b7fff;
+  --color-paper: #f6f3ec;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
 }
 
 :root {
-  --background: #f5f7fb;
+  --background: #f6f3ec;
   --foreground: #0b1f3a;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 html,
@@ -23,6 +34,77 @@ body {
 body {
   font-family: var(--font-sans);
   min-height: 100%;
+}
+
+@keyframes radar-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes radar-blip {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float-card {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes pulse-live {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(16 185 129 / 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgb(16 185 129 / 0);
+  }
+}
+
+.radar-sweep {
+  transform-origin: 50% 50%;
+  animation: radar-sweep 7s linear infinite;
+}
+
+.radar-blip {
+  animation: radar-blip 2.4s ease-in-out infinite;
+}
+
+.float-card {
+  animation: float-card 5.5s ease-in-out infinite;
+}
+
+.live-dot {
+  animation: pulse-live 2s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .radar-sweep,
+  .radar-blip,
+  .float-card,
+  .live-dot {
+    animation: none;
+  }
 }
 
 .print-report {

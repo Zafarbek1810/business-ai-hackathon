@@ -1,5 +1,11 @@
 import { Plan, PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import {
+  DEFAULT_PLAN_CATALOG,
+  DEFAULT_PRICING_PAGE,
+  PLAN_CATALOG_KEY,
+  PRICING_PAGE_KEY,
+} from '../src/common/plan-catalog';
 
 const prisma = new PrismaClient();
 
@@ -47,6 +53,11 @@ async function main() {
     data: [
       { key: 'default_currency', value: 'UZS' },
       { key: 'market_data_mode', value: 'AI' },
+      { key: 'platform_name', value: 'Biznes Radar AI' },
+      { key: 'support_email', value: 'admin@biznesradar.uz' },
+      { key: 'registration_enabled', value: 'true' },
+      { key: PLAN_CATALOG_KEY, value: JSON.stringify(DEFAULT_PLAN_CATALOG) },
+      { key: PRICING_PAGE_KEY, value: JSON.stringify(DEFAULT_PRICING_PAGE) },
     ],
   });
 
