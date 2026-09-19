@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MarketResearchInput } from '../market-research/market-research.types';
 
 export const aiInsightSchema = z.object({
   summary: z.string().min(1),
@@ -36,24 +37,6 @@ export interface ProductEstimateInput {
   productName: string;
 }
 
-export const marketContextEstimateSchema = z.object({
-  averagePrice: z.number().nonnegative().nullable(),
-  minPrice: z.number().nonnegative().nullable(),
-  maxPrice: z.number().nonnegative().nullable(),
-  trendPercent: z.number().nullable(),
-  competitorCount: z.number().int().nonnegative(),
-  demandScore: z.number().min(0).max(100).nullable(),
-  demandTrend: z.enum(['UP', 'STABLE', 'DOWN']).nullable(),
-  reasoningUz: z.string().min(1),
-});
-
-export type MarketContextEstimate = z.infer<typeof marketContextEstimateSchema>;
-
-export interface MarketContextEstimateInput {
-  category: string;
-  region: string;
-}
-
 export interface BusinessAIContext {
   business: {
     name: string;
@@ -76,8 +59,15 @@ export interface BusinessAIContext {
     maxPrice: number | null;
     trendPercent: number | null;
     competitorCount: number;
+    competitors: Array<{
+      name: string;
+      price: number;
+      location: string | null;
+      source: string;
+    }>;
     demandScore: number | null;
     demandTrend: string | null;
+    summaryUz: string | null;
   };
   financials: {
     revenue: number;
@@ -108,7 +98,7 @@ export interface AIProvider {
   generateInsights(context: BusinessAIContext): Promise<AIInsightPayload>;
   chat(context: BusinessAIContext, question: string): Promise<CopilotReply>;
   estimateProductNumbers(input: ProductEstimateInput): Promise<unknown>;
-  estimateMarketContext(input: MarketContextEstimateInput): Promise<unknown>;
+  researchMarket(input: MarketResearchInput): Promise<unknown>;
 }
 
 export function formatUzs(value: number): string {

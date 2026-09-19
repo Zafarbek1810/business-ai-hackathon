@@ -68,9 +68,7 @@ export class ReportsController {
       },
       market: radar.market,
       competition: await this.prisma.competitor.findMany({
-        where: {
-          region: { contains: radar.business.region, mode: 'insensitive' },
-        },
+        where: { businessId: dto.businessId },
         take: 12,
       }),
       finance: radar.finance,

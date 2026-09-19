@@ -131,9 +131,18 @@ export function analyzeRisks(input: RiskEngineInput): RiskEngineResult {
       titleEn: 'Competition risk',
       score: competitionScore,
       level: riskLevelFromScore(competitionScore),
-      reasonUz: `Demo to‘plamda ushbu kategoriya bo‘yicha ${input.competitorCount} ta raqobatchi modeli mavjud.`,
-      reasonRu: `В демо-наборе по этой категории смоделировано ${input.competitorCount} конкурентов.`,
-      reasonEn: `The demo dataset models ${input.competitorCount} competitors in this category.`,
+      reasonUz:
+        input.competitorCount > 0
+          ? `Tizimda qayd etilgan ${input.competitorCount} ta real raqobatchi (o'zingiz kiritgan va/yoki avtomatik veb-qidiruv topgan) asosida hisoblangan.`
+          : `Hali hech qanday raqobatchi topilmagan — "Bozor tahlili" bo'limida qo'shing, xavf bahosi hozircha to'liq emas.`,
+      reasonRu:
+        input.competitorCount > 0
+          ? `Рассчитано на основе ${input.competitorCount} реальных конкурентов (введённых вами и/или найденных автопоиском).`
+          : `Пока не найдено ни одного конкурента — добавьте их в разделе "Анализ рынка", оценка риска пока неполная.`,
+      reasonEn:
+        input.competitorCount > 0
+          ? `Calculated from ${input.competitorCount} real competitors (entered by you and/or found via automated web search).`
+          : `No competitors have been found yet — add them in "Market analysis"; this risk score is incomplete for now.`,
     },
     {
       key: 'margin',
@@ -186,16 +195,16 @@ export function analyzeRisks(input: RiskEngineInput): RiskEngineResult {
       level: riskLevelFromScore(demandScore),
       reasonUz:
         input.demandScore === null
-          ? 'Talab signali kiritilmagan.'
-          : `Demo talab balli ${input.demandScore}/100. Bu haqiqiy bozor prognozi emas.`,
+          ? 'Talab darajasi haqida hali real ma\'lumot yo\'q — bu ko\'rsatkich xavf bahosida neytral standart qiymat bilan hisoblanmoqda.'
+          : `Talab balli ${input.demandScore}/100.`,
       reasonRu:
         input.demandScore === null
-          ? 'Сигнал спроса не задан.'
-          : `Демо-балл спроса ${input.demandScore}/100. Это не реальный рыночный прогноз.`,
+          ? 'Реальных данных о спросе пока нет — этот показатель рассчитывается с нейтральным значением по умолчанию.'
+          : `Балл спроса ${input.demandScore}/100.`,
       reasonEn:
         input.demandScore === null
-          ? 'No demand signal was provided.'
-          : `Demo demand score is ${input.demandScore}/100. This is not a real market forecast.`,
+          ? 'No real demand data is available yet — this factor uses a neutral default value in the risk score.'
+          : `Demand score is ${input.demandScore}/100.`,
     },
     {
       key: 'supplier',
@@ -217,16 +226,16 @@ export function analyzeRisks(input: RiskEngineInput): RiskEngineResult {
       level: riskLevelFromScore(priceSensitivityScore),
       reasonUz:
         input.marketAveragePrice === null
-          ? 'Taqqoslash uchun demo o‘rtacha narx yo‘q.'
-          : `Sizning sotish narxingiz ${input.sellingPrice.toLocaleString('uz-UZ')} so‘m, demo o‘rtacha ${input.marketAveragePrice.toLocaleString('uz-UZ')} so‘m.`,
+          ? 'Raqobatchi narxlari topilmagani uchun bu ko\'rsatkich neytral standart qiymat bilan hisoblanmoqda.'
+          : `Tizimda qayd etilgan raqobatchilarning o'rtacha narxi bilan solishtirildi: sizning narxingiz ${input.sellingPrice.toLocaleString('uz-UZ')} so'm, o'rtacha ${input.marketAveragePrice.toLocaleString('uz-UZ')} so'm.`,
       reasonRu:
         input.marketAveragePrice === null
-          ? 'Нет демо-средней цены для сравнения.'
-          : `Ваша цена продажи ${input.sellingPrice.toLocaleString('ru-RU')} сум, демо-средняя ${input.marketAveragePrice.toLocaleString('ru-RU')} сум.`,
+          ? 'Цены конкурентов не найдены, поэтому этот показатель рассчитывается с нейтральным значением по умолчанию.'
+          : `Сравнено со средней ценой конкурентов, отмеченных в системе: ваша цена ${input.sellingPrice.toLocaleString('ru-RU')} сум, средняя ${input.marketAveragePrice.toLocaleString('ru-RU')} сум.`,
       reasonEn:
         input.marketAveragePrice === null
-          ? 'No demo average price is available for comparison.'
-          : `Your selling price is ${input.sellingPrice.toLocaleString('en-US')} UZS versus a demo average of ${input.marketAveragePrice.toLocaleString('en-US')} UZS.`,
+          ? 'No competitor prices have been found, so this factor uses a neutral default value.'
+          : `Compared against the average price of competitors recorded in the system: your price is ${input.sellingPrice.toLocaleString('en-US')} UZS versus an average of ${input.marketAveragePrice.toLocaleString('en-US')} UZS.`,
     },
     {
       key: 'seasonal',
@@ -235,9 +244,18 @@ export function analyzeRisks(input: RiskEngineInput): RiskEngineResult {
       titleEn: 'Seasonal demand',
       score: seasonalScore,
       level: riskLevelFromScore(seasonalScore),
-      reasonUz: `Demo mavsumiy koeffitsient: ${input.seasonalFactor ?? 'noma’lum'}.`,
-      reasonRu: `Демо-сезонный коэффициент: ${input.seasonalFactor ?? 'не задан'}.`,
-      reasonEn: `Demo seasonal factor: ${input.seasonalFactor ?? 'unknown'}.`,
+      reasonUz:
+        input.seasonalFactor === null
+          ? 'Mavsumiylik haqida real ma\'lumot yo\'q — standart qiymat ishlatilmoqda.'
+          : `Mavsumiy koeffitsient: ${input.seasonalFactor}.`,
+      reasonRu:
+        input.seasonalFactor === null
+          ? 'Реальных данных о сезонности нет — используется значение по умолчанию.'
+          : `Сезонный коэффициент: ${input.seasonalFactor}.`,
+      reasonEn:
+        input.seasonalFactor === null
+          ? 'No real seasonal data is available — a default value is used.'
+          : `Seasonal factor: ${input.seasonalFactor}.`,
     },
     {
       key: 'inventory',

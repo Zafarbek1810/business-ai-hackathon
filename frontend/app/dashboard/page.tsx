@@ -57,16 +57,15 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         <MetricCard
-          label="Bozor imkoniyati"
-          value={market.demandScore !== null ? `${market.demandScore}/100` : "—"}
-          hint="AI talab signali"
+          label="O'rtacha bozor narxi"
+          value={market.averagePrice !== null ? formatUzs(market.averagePrice) : "—"}
+          hint={market.competitorCount > 0 ? "Siz kiritgan raqobatchilar" : "Hali kiritilmagan"}
           tone="indigo"
         />
-        <MetricCard label="Raqobat" value={`${market.competitorCount} ta`} hint="AI taxmini" />
         <MetricCard
-          label="Talab trendi"
-          value={market.demandTrend ?? "—"}
-          hint="Haqiqiy prognoz emas"
+          label="Raqobat"
+          value={`${market.competitorCount} ta`}
+          hint={market.competitorCount > 0 ? "Real ma'lumot (siz + AI qidiruvi)" : "AI qidirmoqda / qo'shing"}
         />
         <MetricCard
           label="Taxminiy marja"

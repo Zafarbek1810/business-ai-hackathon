@@ -3,12 +3,14 @@ import {
   AIProvider,
   BusinessAIContext,
   CopilotReply,
-  MarketContextEstimate,
-  MarketContextEstimateInput,
   ProductEstimate,
   ProductEstimateInput,
   formatUzs,
 } from '../ai.types';
+import {
+  MarketResearchInput,
+  MarketResearchPayload,
+} from '../../market-research/market-research.types';
 
 const CATEGORY_ESTIMATE_DEFAULTS: Record<
   string,
@@ -52,7 +54,7 @@ export class MockAIProvider implements AIProvider {
 
     return {
       summary: `${context.business.name} uchun model ${context.business.region} hududidagi ${context.business.category} g‘oyasini tahlil qiladi. Bu AI xulosasi kafolat emas. Asos: kiritilgan sotish narxi ${selling}, o‘zgaruvchan xarajat ${cost}, baza ssenariy ${units} dona/oy.`,
-      marketExplanation: `Bozor bloki ${context.market.provenance} manbasiga tayanadi. O‘rtacha narx ${context.market.averagePrice ? formatUzs(context.market.averagePrice) : 'yo‘q'}, raqobatchilar soni ${context.market.competitorCount}, talab balli ${context.market.demandScore ?? 'noma’lum'}/100. Bu tasdiqlangan real vaqt statistikasi emas — AI taxmini.`,
+      marketExplanation: `Bozor bloki ${context.market.provenance} manbasiga tayanadi. O‘rtacha narx ${context.market.averagePrice ? formatUzs(context.market.averagePrice) : 'yo‘q'}, raqobatchilar soni ${context.market.competitorCount}, talab balli ${context.market.demandScore !== null ? `${context.market.demandScore}/100` : 'noma’lum'}.`,
       financialExplanation: `Siz kiritgan sotish narxi ${selling} va o‘zgaruvchan xarajat ${cost} asosida modellashtirilgan ulushli marja ${contribution}. Doimiy oylik xarajat ${fixed} bo‘lsa, taxminiy zararsizlik nuqtasi ${be === null ? 'hisoblanmadi' : `${be} dona/oy`}. Baza ssenariydagi ${units} dona shu nuqtadan ${be !== null && units < be ? 'past' : 'yuqori yoki yaqin'}.`,
       opportunities: [
         'Yetkazib beruvchi narxini pasaytirish yoki qo‘shimcha yuqori marjali SKU qo‘shish modeldagi marjani kengaytirishi mumkin.',
@@ -113,6 +115,31 @@ export class MockAIProvider implements AIProvider {
     }
 
     if (
+      normalized.includes('raqobatchi') ||
+      normalized.includes('competitor') ||
+      normalized.includes('konkurent')
+    ) {
+      const list = context.market.competitors;
+      if (list.length === 0) {
+        return {
+          answer:
+            'Hozircha hech qanday raqobatchi ma\'lumoti yo\'q — "Bozor tahlili" bo\'limida o\'zingiz qo\'shing yoki tizim avtomatik veb-qidiruvni yakunlashini kuting.',
+          citations: ['market.competitorCount=0'],
+        };
+      }
+      const names = list
+        .map(
+          (c) =>
+            `${c.name} (${c.price > 0 ? formatUzs(c.price) : 'narxi noma’lum'}${c.location ? `, ${c.location}` : ''})`,
+        )
+        .join('; ');
+      return {
+        answer: `Hozircha ${list.length} ta raqobatchi qayd etilgan: ${names}.`,
+        citations: list.map((c) => `competitor.${c.source}=${c.name}`),
+      };
+    }
+
+    if (
       normalized.includes('validate') ||
       normalized.includes('tekshir') ||
       normalized.includes('birinchi')
@@ -151,23 +178,16 @@ export class MockAIProvider implements AIProvider {
     };
   }
 
-  async estimateMarketContext(
-    input: MarketContextEstimateInput,
-  ): Promise<MarketContextEstimate> {
+  async researchMarket(
+    input: MarketResearchInput,
+  ): Promise<MarketResearchPayload> {
     await Promise.resolve();
-    const base =
-      CATEGORY_ESTIMATE_DEFAULTS[input.category] ??
-      CATEGORY_ESTIMATE_DEFAULTS.OTHER;
-    const averagePrice = Math.round((base.purchasePrice + base.sellingPrice) / 2);
     return {
-      averagePrice,
-      minPrice: Math.round(base.sellingPrice * 0.85),
-      maxPrice: Math.round(base.sellingPrice * 1.2),
-      trendPercent: 0,
-      competitorCount: 3,
-      demandScore: 55,
-      demandTrend: 'STABLE',
-      reasoningUz: `Bu "${input.category}" kategoriyasi va ${input.region} hududi uchun AI taxmini (mock rejim — real AI ulanmagan). Tasdiqlangan real vaqt ma'lumoti emas.`,
+      competitors: [],
+      demandScore: null,
+      demandTrend: null,
+      trendPercent: null,
+      summaryUz: `${input.category} kategoriyasi bo'yicha ${input.city}, ${input.region} uchun avtomatik bozor tadqiqoti ishga tushmadi (mock rejim — real AI ulanmagan, ${input.searchResults.length} ta veb natija topildi lekin tahlil qilinmadi).`,
     };
   }
 }

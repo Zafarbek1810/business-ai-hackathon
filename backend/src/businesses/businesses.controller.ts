@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { BusinessesService } from './businesses.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import {
@@ -19,6 +20,25 @@ import {
   CreateBusinessDto,
   UpdateBusinessDto,
 } from './dto/create-business.dto';
+
+class AddCompetitorDto {
+  @IsString()
+  name!: string;
+
+  @IsNumber()
+  @Min(0)
+  price!: number;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(5)
+  rating?: number;
+}
 
 @ApiTags('businesses')
 @ApiBearerAuth()
@@ -65,5 +85,28 @@ export class BusinessesController {
   @Delete(':id')
   remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.businesses.remove(user, id);
+  }
+
+  @Get(':id/competitors')
+  listCompetitors(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.businesses.listCompetitors(user, id);
+  }
+
+  @Post(':id/competitors')
+  addCompetitor(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AddCompetitorDto,
+  ) {
+    return this.businesses.addCompetitor(user, id, dto);
+  }
+
+  @Delete(':id/competitors/:competitorId')
+  removeCompetitor(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('competitorId') competitorId: string,
+  ) {
+    return this.businesses.removeCompetitor(user, id, competitorId);
   }
 }

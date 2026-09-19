@@ -204,8 +204,10 @@ export class AIService {
         maxPrice: radar.market.maxPrice,
         trendPercent: radar.market.trendPercent,
         competitorCount: radar.market.competitorCount,
+        competitors: radar.market.competitors,
         demandScore: radar.market.demandScore,
         demandTrend: radar.market.demandTrend,
+        summaryUz: radar.market.summaryUz,
       },
       financials: {
         revenue: radar.finance.revenue,

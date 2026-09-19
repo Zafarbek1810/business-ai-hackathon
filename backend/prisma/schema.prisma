@@ -83,6 +83,12 @@ enum DataProvenance {
   EXTERNAL
 }
 
+enum CompetitorSource {
+  USER
+  AI_WEB
+  MAP
+}
+
 enum NotificationType {
   SYSTEM
   ANALYSIS
@@ -113,7 +119,6 @@ model User {
   notifications Notification[]
   reports       BusinessReport[]
   auditLogs     AuditLog[]
-  competitors   Competitor[]     @relation("UserCompetitors")
 
   @@index([role])
 }
@@ -134,13 +139,15 @@ model Business {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  products  BusinessProduct[]
-  expenses  BusinessExpense[]
-  scenarios FinancialScenario[]
-  risks     RiskAnalysis[]
-  analyses  AIAnalysis[]
-  reports   BusinessReport[]
-  snapshots FinancialSnapshot[]
+  products    BusinessProduct[]
+  expenses    BusinessExpense[]
+  scenarios   FinancialScenario[]
+  risks       RiskAnalysis[]
+  analyses    AIAnalysis[]
+  reports     BusinessReport[]
+  snapshots   FinancialSnapshot[]
+  competitors Competitor[]
+  marketResearch MarketResearch?
 
   @@index([userId])
   @@index([category])
@@ -205,9 +212,8 @@ model MarketProduct {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  prices      MarketPrice[]
-  competitors Competitor[]
-  demand      DemandSignal[]
+  prices MarketPrice[]
+  demand DemandSignal[]
 
   @@index([categoryId])
   @@index([region])
@@ -229,31 +235,33 @@ model MarketPrice {
 }
 
 model Competitor {
-  id                String            @id @default(cuid())
-  productId         String?
-  product           MarketProduct?    @relation(fields: [productId], references: [id], onDelete: SetNull)
-  createdById       String?
-  createdBy         User?             @relation("UserCompetitors", fields: [createdById], references: [id], onDelete: SetNull)
-  name              String
-  category          BusinessCategory
-  location          String
-  region            String
-  city              String
-  latitude          Float?
-  longitude         Float?
-  minPrice          Decimal           @db.Decimal(18, 2)
-  maxPrice          Decimal           @db.Decimal(18, 2)
-  rating            Decimal           @db.Decimal(3, 1)
-  productCategories String[]
-  positioning       String
-  dataSource        String
-  provenance        DataProvenance    @default(DEMO)
-  lastUpdated       DateTime
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id         String           @id @default(cuid())
+  businessId String
+  business   Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  price      Decimal          @db.Decimal(18, 2)
+  location   String?
+  rating     Decimal?         @db.Decimal(3, 1)
+  source     CompetitorSource @default(USER)
+  sourceUrl  String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
-  @@index([region])
-  @@index([category])
+  @@index([businessId])
+}
+
+model MarketResearch {
+  id           String        @id @default(cuid())
+  businessId   String        @unique
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  status       String        @default("DONE")
+  demandScore  Int?
+  demandTrend  DemandTrend?
+  trendPercent Decimal?      @db.Decimal(8, 2)
+  summaryUz    String?
+  sourceUrls   Json?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model DemandSignal {
