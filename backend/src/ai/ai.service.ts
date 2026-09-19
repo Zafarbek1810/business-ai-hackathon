@@ -37,8 +37,8 @@ export class AIService {
     } else {
       this.provider = new OpenAIProvider(
         apiKey,
-        this.config.get<string>('AI_MODEL', 'gpt-4o-mini'),
-        this.config.get<string>('AI_BASE_URL', 'https://api.openai.com/v1'),
+        this.config.get<string>('AI_MODEL', 'google/gemma-4-E4B-it'),
+        this.config.get<string>('AI_BASE_URL', 'https://api.deepinfra.com/v1/openai'),
       );
     }
   }
