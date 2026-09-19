@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
-import { AppShell } from "@/components/layout/app-shell";
+import { AdminShell } from "@/components/layout/admin-shell";
 import { Skeleton } from "@/components/ui/states";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -16,12 +16,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.replace("/login");
       return;
     }
-    if (user.role === "ADMIN") {
-      router.replace("/admin");
+    if (user.role !== "ADMIN") {
+      router.replace("/dashboard");
     }
-  }, [loading, user, router]);
+  }, [loading, router, user]);
 
-  if (loading || !user || user.role === "ADMIN") {
+  if (loading || !user || user.role !== "ADMIN") {
     return (
       <div className="space-y-4 p-8">
         <Skeleton className="h-10 w-64" />
@@ -30,5 +30,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  return <AppShell>{children}</AppShell>;
+  return <AdminShell>{children}</AdminShell>;
 }

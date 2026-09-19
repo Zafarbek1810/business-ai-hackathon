@@ -7,11 +7,12 @@ import { useAuth } from "@/features/auth/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PricingSection } from "@/components/pricing/pricing-section";
 import { usersApi } from "@/services/radar";
-import { PLAN_LABELS, getPlan } from "@/config/plans";
+import { usePlans } from "@/hooks/use-plans";
 import type { Plan } from "@/types/api";
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { getPlan, labels } = usePlans();
   const queryClient = useQueryClient();
   const [loadingPlan, setLoadingPlan] = useState<Plan | null>(null);
   const current = getPlan(user?.plan);
@@ -21,7 +22,7 @@ export default function SettingsPage() {
     try {
       await usersApi.updatePlan(plan);
       await queryClient.invalidateQueries({ queryKey: ["me"] });
-      toast.success(`${PLAN_LABELS[plan]} tarifiga o‘tildi. To‘lov shlyuzi hozircha demo.`);
+      toast.success(`${labels[plan]} tarifiga o‘tildi. To‘lov shlyuzi hozircha demo.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Tarif yangilanmadi.");
     } finally {

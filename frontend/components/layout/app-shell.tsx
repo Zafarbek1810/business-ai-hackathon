@@ -14,13 +14,12 @@ import {
   LogOut,
   Settings,
   ShieldAlert,
-  Users,
 } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import { cn } from "@/lib/utils";
 import { useRadar } from "@/hooks/use-radar";
 import { Badge } from "@/components/ui/badge";
-import { PLAN_LABELS } from "@/config/plans";
+import { usePlans } from "@/hooks/use-plans";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -38,6 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { radar } = useRadar();
+  const { labels } = usePlans();
 
   return (
     <div className="min-h-screen bg-[#f5f7fb]">
@@ -68,22 +68,13 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
-          {user?.role === "ADMIN" ? (
-            <Link
-              href="/admin"
-              className="mt-3 flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-            >
-              <Users className="h-4 w-4" />
-              Admin panel
-            </Link>
-          ) : null}
         </nav>
         <div className="border-t border-slate-100 p-4">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium text-navy-900">{user?.name}</p>
             {user?.plan ? (
               <Link href="/dashboard/settings">
-                <Badge tone={user.plan === "FREE" ? "slate" : "indigo"}>{PLAN_LABELS[user.plan]}</Badge>
+                <Badge tone={user.plan === "FREE" ? "slate" : "indigo"}>{labels[user.plan]}</Badge>
               </Link>
             ) : null}
           </div>

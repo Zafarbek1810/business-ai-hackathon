@@ -59,8 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       persistToken(result.accessToken);
       await queryClient.invalidateQueries({ queryKey: ["me"] });
-      const businesses = await api<Business[]>("/businesses");
-      if (businesses[0]) setActiveBusinessId(businesses[0].id);
+      if (result.user.role !== "ADMIN") {
+        const businesses = await api<Business[]>("/businesses");
+        if (businesses[0]) setActiveBusinessId(businesses[0].id);
+      }
       return result.user;
     },
     [persistToken, queryClient, setActiveBusinessId],

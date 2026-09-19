@@ -61,6 +61,69 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
+export const ROLE_LABELS: Record<Role, string> = {
+  USER: "Foydalanuvchi",
+  ADMIN: "Admin",
+  ANALYST: "Tahlilchi",
+  BUSINESS_CONSULTANT: "Maslahatchi",
+  ENTERPRISE: "Korxona",
+};
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  plan: Plan;
+  locale: string;
+  createdAt: string;
+  updatedAt: string;
+  _count: { businesses: number };
+}
+
+export interface AdminDashboard {
+  totalUsers: number;
+  activeBusinesses: number;
+  analysesCreated: number;
+  aiAnalyses: number;
+  reports: number;
+  popularCategories: Array<{ category: string; _count: { category: number } }>;
+  planBreakdown: Array<{
+    plan: Plan;
+    name: string;
+    users: number;
+    businesses: number;
+    estimatedMrr: number;
+  }>;
+  recentUsers: AdminUser[];
+}
+
+export interface PlanStats {
+  plans: Array<{
+    id: Plan;
+    name: string;
+    tagline: string;
+    monthlyPrice: number;
+    yearlyPrice: number;
+    businessLimit: number | null;
+    users: number;
+    businesses: number;
+    estimatedMrr: number;
+    share: number;
+  }>;
+  totalUsers: number;
+  paidUsers: number;
+  estimatedMrr: number;
+  estimatedArr: number;
+}
+
+export interface SystemSetting {
+  id: string;
+  key: string;
+  value: string;
+  updatedAt: string | null;
+}
+
 export interface BusinessProduct {
   id?: string;
   name: string;

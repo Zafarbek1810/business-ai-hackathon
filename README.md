@@ -156,8 +156,8 @@ Haqiqiy model:
 ```
 USE_MOCK_AI=false
 AI_API_KEY=...
-AI_MODEL=gpt-4o-mini
-AI_BASE_URL=https://api.openai.com/v1
+AI_MODEL=google/gemma-4-E4B-it
+AI_BASE_URL=https://api.deepinfra.com/v1/openai
 ```
 
 Noto‘g‘ri AI JSON bo‘lsa, tizim qayta urinadi, so‘ng deterministik mock javobga o‘tadi.

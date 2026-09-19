@@ -14,12 +14,13 @@ import { formatUzs } from "@/lib/format";
 import { CATEGORY_LABELS, type Business } from "@/types/api";
 import { AiInsightPanel } from "@/components/ai/ai-insight-panel";
 import { businessApi } from "@/services/radar";
-import { canCreateBusiness, getPlan } from "@/config/plans";
+import { usePlans } from "@/hooks/use-plans";
 
 export default function IdeasPage() {
   const queryClient = useQueryClient();
   const { businesses, businessesLoading, activeBusinessId: radarBusinessId } = useRadar();
-  const { setActiveBusinessId, activeBusinessId, user } = useAuth();
+  const { user, setActiveBusinessId, activeBusinessId } = useAuth();
+  const { canCreateBusiness, getPlan } = usePlans();
   const atLimit = !canCreateBusiness(user?.plan, businesses.length);
   const plan = getPlan(user?.plan);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);

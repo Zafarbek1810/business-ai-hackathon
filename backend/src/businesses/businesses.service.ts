@@ -22,7 +22,8 @@ import {
 } from '../finance/engine/finance.engine';
 import { analyzeRisks } from '../risks/engine/risk.engine';
 import { toNumber } from '../common/utils/decimal';
-import { PLAN_BUSINESS_LIMITS, planLimitMessage } from '../common/plans';
+import { planLimitMessage } from '../common/plans';
+import { PlansService } from '../common/plans.service';
 import { MarketResearchService } from '../market-research/market-research.service';
 
 export interface MarketContextResult {
@@ -62,6 +63,7 @@ export class BusinessesService {
     private readonly ownership: OwnershipService,
     private readonly analytics: AnalyticsService,
     private readonly marketResearch: MarketResearchService,
+    private readonly plans: PlansService,
   ) {}
 
   async create(user: AuthUser, dto: CreateBusinessDto) {
@@ -445,7 +447,7 @@ export class BusinessesService {
       select: { plan: true },
     });
     const plan = dbUser?.plan ?? 'FREE';
-    const limit = PLAN_BUSINESS_LIMITS[plan];
+    const limit = await this.plans.getBusinessLimit(plan);
     if (limit !== null && count >= limit) {
       throw new ForbiddenException(planLimitMessage(plan, limit));
     }

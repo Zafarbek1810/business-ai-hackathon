@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -21,6 +22,12 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    const registration = await this.prisma.systemSetting.findUnique({
+      where: { key: 'registration_enabled' },
+    });
+    if (registration?.value === 'false') {
+      throw new ForbiddenException('Ro‘yxatdan o‘tish hozircha yopiq.');
+    }
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email.toLowerCase() },
     });

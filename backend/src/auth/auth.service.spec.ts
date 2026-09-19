@@ -10,6 +10,9 @@ describe('AuthService', () => {
       findUnique: jest.fn(),
       create: jest.fn(),
     },
+    systemSetting: {
+      findUnique: jest.fn().mockResolvedValue({ value: 'true' }),
+    },
   };
   const jwt = { sign: jest.fn().mockReturnValue('token') };
   let service: AuthService;
